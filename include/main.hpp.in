@@ -1,0 +1,4 @@
+// Version provided by CMake
+#define PROJECT_VERSION_MAJOR @HHSelector_VERSION_MAJOR@
+#define PROJECT_VERSION_MINOR @HHSelector_VERSION_MINOR@
+#define PROJECT_VERSION_PATCH @HHSelector_VERSION_PATCH@

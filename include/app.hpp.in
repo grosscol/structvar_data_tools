@@ -1,0 +1,24 @@
+#include "app_control_data.hpp"
+
+// Version data configured by CMake during build
+#define PROJECT_VERSION_MAJOR @HHSelector_VERSION_MAJOR@
+#define PROJECT_VERSION_MINOR @HHSelector_VERSION_MINOR@
+#define PROJECT_VERSION_PATCH @HHSelector_VERSION_PATCH@
+
+
+/**
+ * Entry point for the application.  Essentially, main, but can be linked against.
+ */
+int app_main(const int argc, const char* argv[]);
+
+void emit_version_text();
+
+/**
+ * Primary logic of the data reading and processing.
+ */
+bool run(const AppControlData&);
+
+/* Parse CLI arguments into application control data.
+ * Abstract the command line args from the information to control the execution of the application.
+*/
+bool parse_cli_args(const int argc, const char* argv[], AppControlData& controls);

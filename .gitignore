@@ -4,8 +4,12 @@ lib/*
 
 # Ignore any executables
 bin/*
+het_hom_sel
 
 # CMake
 CMakeFiles/*
 CMakeCache.txt
 cmake_install.cmake
+
+# GTest
+Testing/*

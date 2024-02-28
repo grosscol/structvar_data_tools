@@ -4,7 +4,7 @@
 #include <boost/program_options.hpp>
 #include <htslib/vcf.h>
 #include "variant_processor.hpp"
-#include "bcf_sampler.hpp"
+#include "bcf_reader.hpp"
 #include "app_control_data.hpp"
 #include "app.hpp"
 
@@ -52,7 +52,7 @@ void emit_version_text(){
 
 bool parse_cli_args(const int argc, const char* argv[], AppControlData& controls){
   
-  po::options_description desc{"Allowed options"};
+  po::options_description desc{"Program options"};
   po::variables_map vm;        
   std::string in_path;
 
@@ -94,14 +94,11 @@ bool parse_cli_args(const int argc, const char* argv[], AppControlData& controls
 }
 
 bool run(const AppControlData& control){
-  if(control.input_path.compare("-") == 0){
-    std::cout<<"Reading from STDIN\n";
-  } else {
-    std::cout<<"Reading: "<<control.input_path<<"\n";
-  }
-
   try{
-    BcfSampler bcf{control.input_path};
+    BcfReader bcf{control.input_path};
+    while(bcf.next_variant()){
+      std::cout<<"id: "<<bcf.variant_id()<<"\n";
+    }
   } catch(std::runtime_error& ex){
     std::cerr<<"Error creating BCF reader: "<<ex.what()<<"\n";
     return false;

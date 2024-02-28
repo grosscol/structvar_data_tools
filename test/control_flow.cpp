@@ -1,8 +1,10 @@
 #include <gtest/gtest.h>
 #include <cstdlib>
 #include <iostream>
+#include <filesystem>
 #include "app_control_data.hpp"
 #include "app.hpp"
+#include "shared_test_fixtures.hpp"
 
 TEST(ControlFlow, VersionReturn) {
   const char* argv[]{"testing_app", "--version"};
@@ -37,6 +39,20 @@ TEST(ControlFlow, HelpReturn) {
 
 	/* Restore cout */
 	std::cout.rdbuf(old_buff);
+
+  EXPECT_EQ(retval, EXIT_SUCCESS);
+};
+
+TEST(ControlFlow, DataOpen){
+  std::filesystem::path test_data_dir{TEST_DATA_DIR};
+  std::filesystem::path test_data_file{"structvar_sample_input.vcf"};
+  std::filesystem::path test_data_path{test_data_dir / test_data_file};
+
+  const char* argv[]{"testing_app", "--file", test_data_path.c_str()};
+  const int argc{3};
+  int retval;
+
+  retval = app_main(argc, argv);
 
   EXPECT_EQ(retval, EXIT_SUCCESS);
 };

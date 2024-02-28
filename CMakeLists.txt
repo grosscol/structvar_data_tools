@@ -15,6 +15,7 @@ include(FindBZip2)
 include(FindLibLZMA)
 include(FindCURL)
 include(FindOpenSSL)
+include(GoogleTest)
 
 ##########################
 # Avoid in-source builds #
@@ -94,14 +95,14 @@ set(CLI_NAME het_hom_sel)
 # Directory for the cmake configured header files
 file(MAKE_DIRECTORY ${CONFIGURED_INCLUDE_PATH})
 
-# Add VERSION info into application header.
+# Add VERSION info into application header file.
 configure_file(include/app.hpp.in ${CONFIGURED_INCLUDE_PATH}/app.hpp)
 
 # Build static library of application logi
 add_library(${CLI_NAME}_lib
   STATIC
     src/variant_processor.cpp
-    src/bcf_sampler.cpp
+    src/bcf_reader.cpp
     src/app.cpp)
 
 target_include_directories(${CLI_NAME}_lib 
@@ -136,20 +137,24 @@ target_link_libraries(${CLI_NAME} PRIVATE ${CLI_NAME}_lib)
 #########
 # Tests #
 #########
-enable_testing()
-add_executable(
-  test_control
+
+# Make full path to test data directory available in testing header file
+set(TEST_DATA_DIR ${CMAKE_SOURCE_DIR}/test/data)
+configure_file(test/structvar_fixture.hpp.in ${CONFIGURED_INCLUDE_PATH}/structvar_fixture.hpp)
+
+add_executable(test_control
+  test/bcf_reader.cpp
   test/control_flow.cpp)
 
 target_include_directories(test_control 
   PUBLIC 
+    ${CONFIGURED_INCLUDE_PATH}
     ${PROJECT_BINARY_DIR}
     ${CMAKE_SOURCE_DIR}/include)
 
-target_link_libraries(
-  test_control
+target_link_libraries(test_control
   GTest::gtest_main
   ${CLI_NAME}_lib)
 
-include(GoogleTest)
+enable_testing()
 gtest_discover_tests(test_control)

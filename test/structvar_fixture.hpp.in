@@ -1,0 +1,16 @@
+#ifndef STRUCTVAR_FIXTURE
+#define STRUCTVAR_FIXTURE
+
+#include <gtest/gtest.h>
+#include <filesystem>
+
+#define TEST_DATA_DIR "@TEST_DATA_DIR@"
+
+class StructVarTest : public testing::Test {
+  protected:
+    std::filesystem::path test_data_dir{TEST_DATA_DIR};
+    std::filesystem::path test_data_file{"structvar_sample_input.vcf"};
+    std::filesystem::path test_data_path{test_data_dir / test_data_file};
+};
+
+#endif /* STRUCTVAR_FIXTURE */

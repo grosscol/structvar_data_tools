@@ -24,7 +24,7 @@ int app_main(const int argc, const char* argv[]) {
     std::cerr<<"Arg parsing error!";
     return EXIT_FAILURE;
   }
-  
+
   if(app_ctl.print_version){
     emit_version_text();
   }
@@ -43,17 +43,17 @@ int app_main(const int argc, const char* argv[]) {
 }
 
 void emit_version_text(){
-  std::cout<<"Version: " 
-    << PROJECT_VERSION_MAJOR << "." 
+  std::cout<<"Version: "
+    << PROJECT_VERSION_MAJOR << "."
     << PROJECT_VERSION_MINOR << "."
     << PROJECT_VERSION_PATCH << "\n";
 }
 
 
 bool parse_cli_args(const int argc, const char* argv[], AppControlData& controls){
-  
+
   po::options_description desc{"Program options"};
-  po::variables_map vm;        
+  po::variables_map vm;
   std::string in_path;
 
   try {
@@ -64,7 +64,7 @@ bool parse_cli_args(const int argc, const char* argv[], AppControlData& controls
     ;
 
     po::store(po::parse_command_line(argc, argv, desc), vm);
-    po::notify(vm);    
+    po::notify(vm);
 
     // Handle here the event that requires desc.  Avoid needing desc outside of this scope.
     if (vm.count("help")) {
@@ -79,7 +79,7 @@ bool parse_cli_args(const int argc, const char* argv[], AppControlData& controls
 
     if (vm.count("file")) {
       controls.input_path = vm["file"].as<std::string>();
-    } 
+    }
 
     return true;
   }
@@ -96,13 +96,16 @@ bool parse_cli_args(const int argc, const char* argv[], AppControlData& controls
 bool run(const AppControlData& control){
   try{
     BcfReader bcf{control.input_path};
+    std::cout<<"N samples: "<<bcf.n_samples()<<std::endl;
     while(bcf.next_variant()){
-      std::cout<<"id: "<<bcf.variant_id()<<"\n";
+      bcf.print_genotypes();
+      std::cout<<std::endl;
     }
   } catch(std::runtime_error& ex){
     std::cerr<<"Error creating BCF reader: "<<ex.what()<<"\n";
     return false;
   }
 
+  std::cout<<"Application Done"<<std::endl;
   return true;
 }

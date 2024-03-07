@@ -5,17 +5,23 @@ project(
   DESCRIPTION "heterozygote and homozygote representative selector"
   LANGUAGES CXX)
 
+# Module for getting external content
+include(FetchContent)
+
+# Useful for debuggging CMake values
 include(CMakePrintHelpers)
+
+# Testing module
+include(GoogleTest)
 
 # Requirements for HTSLib
 include(ExternalProject)
-include(FetchContent)
 include(FindZLIB)
 include(FindBZip2)
 include(FindLibLZMA)
 include(FindCURL)
 include(FindOpenSSL)
-include(GoogleTest)
+
 
 ##########################
 # Avoid in-source builds #
@@ -37,7 +43,6 @@ endif()
 #################################
 # Get Boost and GTest libraries #
 #################################
-# adapted from https://stackoverflow.com/a/73933840
 set(BOOST_INCLUDE_LIBRARIES thread filesystem system program_options)
 set(BOOST_ENABLE_CMAKE ON)
 
@@ -98,7 +103,7 @@ file(MAKE_DIRECTORY ${CONFIGURED_INCLUDE_PATH})
 # Add VERSION info into application header file.
 configure_file(include/app.hpp.in ${CONFIGURED_INCLUDE_PATH}/app.hpp)
 
-# Build static library of application logi
+# Build static library of application logic
 add_library(${CLI_NAME}_lib
   STATIC
     src/variant_processor.cpp
@@ -158,3 +163,19 @@ target_link_libraries(test_control
 
 enable_testing()
 gtest_discover_tests(test_control)
+
+###########
+# Scratch #
+###########
+add_executable(scratch
+  src/scratch.cpp)
+
+target_link_libraries(scratch 
+  PRIVATE 
+    ${htslib_LIB}
+    Boost::filesystem Boost::program_options
+    ZLIB::ZLIB
+    BZip2::BZip2
+    LibLZMA::LibLZMA
+    CURL::libcurl
+    OpenSSL::Crypto)

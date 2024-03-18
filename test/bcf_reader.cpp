@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+#include <gmock/gmock.h>
 #include <filesystem>
 #include "structvar_fixture.hpp"
 #include "bcf_reader.hpp"
@@ -64,4 +65,32 @@ TEST_F(StructVarTest, ExpectedNumHetsAndHoms){
   reader.next_variant();
   EXPECT_EQ(reader.n_hets(), 5);
   EXPECT_EQ(reader.n_homs(), 2);
+}
+
+TEST_F(StructVarTest, ExpectedHetsAndHomsIndexes){
+  BcfReader reader{test_data_path.string()};
+
+  reader.next_variant();
+  EXPECT_THAT(reader.het_idxs(), testing::ElementsAre(1,2));
+  EXPECT_THAT(reader.hom_idxs(), testing::ElementsAre(0));
+
+  reader.next_variant();
+  EXPECT_TRUE(reader.het_idxs().empty());
+  EXPECT_TRUE(reader.hom_idxs().empty());
+
+  reader.next_variant();
+  EXPECT_THAT(reader.het_idxs(), testing::ElementsAre(5,6,7,8,9));
+  EXPECT_THAT(reader.hom_idxs(), testing::ElementsAre(3,4));
+}
+
+TEST_F(StructVarTest, ExpectedSampleNames){
+  BcfReader reader{test_data_path.string()};
+
+  EXPECT_EQ(reader.sample_idx_to_id(0), "EXAMPLE01");
+  EXPECT_EQ(reader.sample_idx_to_id(4), "EXAMPLE05");
+  EXPECT_EQ(reader.sample_idx_to_id(9), "EXAMPLE10");
+
+  std::vector<int> input_ids{0,4,9};
+  EXPECT_THAT(reader.sample_idxs_to_ids(input_ids),
+              testing::ElementsAre("EXAMPLE01","EXAMPLE05","EXAMPLE10"));
 }

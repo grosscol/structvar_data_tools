@@ -11,6 +11,6 @@ CMakeFiles/*
 CMakeCache.txt
 cmake_install.cmake
 
-# GTest
+# Testing artifacts
 Testing/*
-valgrind.out
+valgrind.*

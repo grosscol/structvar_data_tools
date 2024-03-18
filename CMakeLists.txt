@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 project(
-  HHSelector 
+  HHSelector
   VERSION 0.1.0
   DESCRIPTION "heterozygote and homozygote representative selector"
   LANGUAGES CXX)
@@ -28,7 +28,7 @@ include(FindOpenSSL)
 ##########################
 # adapted from https://stackoverflow.com/a/29678916
 if ( ${CMAKE_SOURCE_DIR} STREQUAL ${CMAKE_BINARY_DIR} )
-  message(FATAL_ERROR 
+  message(FATAL_ERROR
     "In-source builds not allowed.\n"
     "Please run from CMake from the build directory, or use -B flag."
     "After removing CMakeCache.txt (rm CMakeCache.txt)\n"
@@ -57,7 +57,7 @@ FetchContent_Declare(
   googletest
   URL https://github.com/google/googletest/archive/03597a01ee50ed33e9dfd640b249b4be3799d395.zip
 )
-  
+
 FetchContent_MakeAvailable(boost googletest)
 
 ##############
@@ -106,21 +106,22 @@ configure_file(include/app.hpp.in ${CONFIGURED_INCLUDE_PATH}/app.hpp)
 # Build static library of application logic
 add_library(${CLI_NAME}_lib
   STATIC
-    src/variant_processor.cpp
     src/bcf_reader.cpp
     src/app.cpp)
 
-target_include_directories(${CLI_NAME}_lib 
-  PUBLIC 
+target_include_directories(${CLI_NAME}_lib
+  PUBLIC
     ${CONFIGURED_INCLUDE_PATH}
     ${CMAKE_SOURCE_DIR}/include
-  PRIVATE 
-    ${htslib_INSTALL}/include)
+  PRIVATE
+    ${htslib_INSTALL}/include
+    ${CSV_INCLUDE_DIR})
 
-target_link_libraries(${CLI_NAME}_lib 
-  PRIVATE 
+target_link_libraries(${CLI_NAME}_lib
+  PRIVATE
     ${htslib_LIB}
-    Boost::filesystem Boost::program_options
+    Boost::filesystem
+    Boost::program_options
     ZLIB::ZLIB
     BZip2::BZip2
     LibLZMA::LibLZMA
@@ -128,11 +129,11 @@ target_link_libraries(${CLI_NAME}_lib
     OpenSSL::Crypto)
 
 # Build executable wrapper around application lib
-add_executable(${CLI_NAME} 
+add_executable(${CLI_NAME}
   src/main.cpp)
 
-target_include_directories(${CLI_NAME} 
-  PUBLIC 
+target_include_directories(${CLI_NAME}
+  PUBLIC
     ${CONFIGURED_INCLUDE_PATH}
     ${CMAKE_SOURCE_DIR}/include)
 
@@ -149,16 +150,19 @@ configure_file(test/structvar_fixture.hpp.in ${CONFIGURED_INCLUDE_PATH}/structva
 
 add_executable(test_control
   test/bcf_reader.cpp
-  test/control_flow.cpp)
+  test/control_flow.cpp
+  test/app_processing.cpp)
 
-target_include_directories(test_control 
-  PUBLIC 
+target_include_directories(test_control
+  PUBLIC
     ${CONFIGURED_INCLUDE_PATH}
     ${PROJECT_BINARY_DIR}
-    ${CMAKE_SOURCE_DIR}/include)
+    ${CMAKE_SOURCE_DIR}/include
+    ${CSV_INCLUDE_DIR})
 
 target_link_libraries(test_control
   GTest::gtest_main
+  GTest::gmock_main
   ${CLI_NAME}_lib)
 
 enable_testing()
@@ -170,8 +174,8 @@ gtest_discover_tests(test_control)
 add_executable(scratch
   src/scratch.cpp)
 
-target_link_libraries(scratch 
-  PRIVATE 
+target_link_libraries(scratch
+  PRIVATE
     ${htslib_LIB}
     Boost::filesystem Boost::program_options
     ZLIB::ZLIB
@@ -179,3 +183,43 @@ target_link_libraries(scratch
     LibLZMA::LibLZMA
     CURL::libcurl
     OpenSSL::Crypto)
+
+##########################################
+#            DEBUG CMake                 #
+##########################################
+# Get all propreties that cmake supports
+if(NOT CMAKE_PROPERTY_LIST)
+    execute_process(COMMAND cmake --help-property-list OUTPUT_VARIABLE CMAKE_PROPERTY_LIST)
+
+    # Convert command output into a CMake list
+    string(REGEX REPLACE ";" "\\\\;" CMAKE_PROPERTY_LIST "${CMAKE_PROPERTY_LIST}")
+    string(REGEX REPLACE "\n" ";" CMAKE_PROPERTY_LIST "${CMAKE_PROPERTY_LIST}")
+    list(REMOVE_DUPLICATES CMAKE_PROPERTY_LIST)
+endif()
+
+function(print_properties)
+    message("CMAKE_PROPERTY_LIST = ${CMAKE_PROPERTY_LIST}")
+endfunction()
+
+# Print all the properties of a target.
+# https://stackoverflow.com/a/34292622
+function(print_target_properties target)
+    if(NOT TARGET ${target})
+      message(STATUS "There is no target named '${target}'")
+      return()
+    endif()
+
+    foreach(property ${CMAKE_PROPERTY_LIST})
+        string(REPLACE "<CONFIG>" "${CMAKE_BUILD_TYPE}" property ${property})
+
+        if(property STREQUAL "LOCATION" OR property MATCHES "^LOCATION_" OR property MATCHES "_LOCATION$")
+            continue()
+        endif()
+
+        get_property(was_set TARGET ${target} PROPERTY ${property} SET)
+        if(was_set)
+            get_target_property(value ${target} ${property})
+            message("${target} ${property} = ${value}")
+        endif()
+    endforeach()
+endfunction()

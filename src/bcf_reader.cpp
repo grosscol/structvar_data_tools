@@ -1,4 +1,5 @@
 #include <iostream>
+#include <algorithm>
 #include <string>
 #include <stdexcept>
 #include <memory>
@@ -12,20 +13,19 @@ BcfReader::BcfReader(const std::string& in_path, const bool silent)
     hts_set_log_level(HTS_LOG_OFF);
   }
 
-  m_in_path = in_path;
-  m_silent = silent;
-  variant = bcf_init();
-
   infile = bcf_open(in_path.data(), "r");
   if(!infile){
     throw std::runtime_error(std::string("Failed to open ") + in_path);
   }
+
+  m_in_path = in_path;
 
   header = bcf_hdr_read(infile);
   if(!header){
     throw std::runtime_error(std::string("Failed to read header."));
   }
 
+  variant = bcf_init();
   m_num_samples = bcf_hdr_nsamples(header);
 
   // Allocate max the space list of indexes could need.
@@ -40,12 +40,20 @@ BcfReader::~BcfReader(){
   bcf_destroy(variant);
 }
 
-int BcfReader::n_hets(){
-  return m_het_sample_id_idxs.size();
+int BcfReader::n_hets() const{ return m_het_sample_id_idxs.size(); }
+int BcfReader::n_homs() const{ return m_hom_sample_id_idxs.size(); }
+
+int64_t BcfReader::pos() const{ return m_pos; }
+std::string BcfReader::chr() const{ return m_chr; }
+std::string BcfReader::ref() const{ return m_ref; }
+std::string BcfReader::alt() const{ return m_alt; }
+
+const std::vector<int>& BcfReader::het_idxs() const{
+  return m_het_sample_id_idxs;
 }
 
-int BcfReader::n_homs(){
-  return m_hom_sample_id_idxs.size();
+const std::vector<int>& BcfReader::hom_idxs() const{
+  return m_hom_sample_id_idxs;
 }
 
 bool BcfReader::next_variant(){
@@ -61,23 +69,24 @@ bool BcfReader::next_variant(){
   m_het_sample_id_idxs.clear();
   m_hom_sample_id_idxs.clear();
   parse_genotypes();
+  parse_chr_pos_ref_alt();
   return true;
 }
 
-int BcfReader::n_samples(){
+int BcfReader::n_samples() const {
   return m_num_samples;
 }
 
-bool BcfReader::is_data_exhausted(){
+bool BcfReader::is_data_exhausted() const{
   return m_is_data_exhausted;
 }
 
-std::string BcfReader::vcf_version(){
+std::string BcfReader::vcf_version() const{
   const char* header_version{bcf_hdr_get_version(header)};
   return std::string{header_version};
 }
 
-std::string BcfReader::variant_id(){
+std::string BcfReader::variant_id() const{
   bcf_unpack(variant, BCF_UN_STR);
 
   std::string id_str{variant->d.id};
@@ -98,7 +107,16 @@ void BcfReader::read_genotypes(){
   gt_array.reset(init_ptr);
 }
 
-void BcfReader::print_genotypes(){
+void BcfReader::parse_chr_pos_ref_alt(){
+  bcf_unpack(variant, BCF_UN_STR);
+
+  m_ref = std::string{variant->d.allele[0]};
+  m_alt = std::string{variant->d.allele[1]};
+  m_chr = std::string{bcf_hdr_id2name(header, variant->rid)};
+  m_pos = variant->pos;
+}
+
+void BcfReader::print_genotypes() const{
   int allele_idx{0};
   int allele_val{0};
   bool is_even_idx{true};
@@ -128,17 +146,20 @@ void BcfReader::parse_genotypes(){
   /* Genotype parsing variables
    *
    * max_ploidy: Number of alleles per sample.
+   * sample_idx: Index of data where sample alleles begin.
    * allele_val: htslib representation of allele. Different than VCF 0-based index.
    *             Use bcf_gte_allele(val) to translate.
    * alt_count:  Count ALTs to determine if sample is het or hom.
    * allele_idx: Index of given sample-allele into data.
    */
   int max_ploidy = m_num_gt / m_num_samples;
+  int sample_idx {0};
   int allele_val {0};
   int alt_count  {0};
   int allele_idx {0};
 
-  for(int sample_idx=0; sample_idx < m_num_gt; sample_idx += 2){
+  for(int sample_number=0; sample_number < m_num_samples; sample_number++){
+    sample_idx = sample_number * max_ploidy;
     alt_count = 0;
 
     for(int allele_offset=0; allele_offset < max_ploidy; allele_offset++){
@@ -153,11 +174,27 @@ void BcfReader::parse_genotypes(){
     // Add sample id to list of het or hom sample indexes when appropriate.
     switch(alt_count){
       case 2:
-        m_hom_sample_id_idxs.insert(m_hom_sample_id_idxs.end(), sample_idx);
+        m_hom_sample_id_idxs.insert(m_hom_sample_id_idxs.end(), sample_number);
         break;
       case 1:
-        m_het_sample_id_idxs.insert(m_het_sample_id_idxs.end(), sample_idx);
+        m_het_sample_id_idxs.insert(m_het_sample_id_idxs.end(), sample_number);
         break;
     }
   }
+}
+
+std::string BcfReader::sample_idx_to_id(const int& idx) const{
+  std::string sample_id{header -> samples[idx]};
+  return(sample_id);
+}
+
+std::vector<std::string> BcfReader::sample_idxs_to_ids(const std::vector<int>& idxs) const{
+  std::vector<std::string> sample_ids{};
+  sample_ids.reserve(idxs.size());
+
+  for(int idx : idxs){
+    sample_ids.insert(sample_ids.end(), header -> samples[idx]);
+  }
+
+  return sample_ids;
 }

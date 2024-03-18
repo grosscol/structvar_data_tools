@@ -21,15 +21,25 @@ class BcfReader {
     // Advance state to next variant.  Return true if successful.
     bool next_variant();
 
-    /* Accessors */
-    bool is_data_exhausted();
-    std::string variant_id();
-    std::string vcf_version();
-    int n_samples();
-    int n_hets();
-    int n_homs();
+    /* Lookup sample Id corresponding to given index */
+    std::string sample_idx_to_id(const int& idx) const;
+    std::vector<std::string> sample_idxs_to_ids(const std::vector<int>& idxs) const;
 
-    void print_genotypes();
+    /* Accessors */
+    bool is_data_exhausted() const;
+    std::string variant_id() const;
+    std::string vcf_version() const;
+    int n_samples() const;
+    int n_hets() const;
+    int n_homs() const;
+    int64_t pos() const;
+    std::string chr() const;
+    std::string ref() const;
+    std::string alt() const;
+
+    const std::vector<int>& het_idxs() const;
+    const std::vector<int>& hom_idxs() const;
+    void print_genotypes() const;
 
     void scratch();
 
@@ -38,6 +48,21 @@ class BcfReader {
     htsFile*    infile{nullptr};
     bcf_hdr_t*  header{nullptr};
     bcf1_t*     variant{nullptr};
+
+    // Flag that end of data has been reached.
+    bool m_is_data_exhausted{false};
+
+    // Status of the last read operation
+    int  m_read_status{0};
+
+    // number of samples
+    int  m_num_samples{0};
+
+    std::string m_chr{};
+    int64_t m_pos{0};
+    std::string m_ref{};
+    // Assumes only one alt per record
+    std::string m_alt{};
 
     /* Array of GT data with appropriate deleter.
     *  Data is sequence of alleles in sample order:
@@ -55,20 +80,11 @@ class BcfReader {
     */
     void read_genotypes();
 
+    /* parse out first four vcf columns */
+    void parse_chr_pos_ref_alt();
+
     /* parse out indexes of het and hom samples */
     void parse_genotypes();
-
-    // Flag that end of data has been reached.
-    bool m_is_data_exhausted{false};
-
-    // Control allowing htslib to print to stderr
-    bool m_silent{true};
-
-    // Status of the last read operation
-    int  m_read_status{0};
-
-    // number of samples
-    int  m_num_samples{0};
 };
 
 #endif /*BCF_READER*/

@@ -150,8 +150,7 @@ configure_file(test/structvar_fixture.hpp.in ${CONFIGURED_INCLUDE_PATH}/structva
 
 add_executable(test_control
   test/bcf_reader.cpp
-  test/control_flow.cpp
-  test/app_processing.cpp)
+  test/control_flow.cpp)
 
 target_include_directories(test_control
   PUBLIC

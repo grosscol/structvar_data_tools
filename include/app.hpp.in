@@ -1,4 +1,8 @@
+#include <string>
+#include <vector>
+#include <random>
 #include "app_control_data.hpp"
+#include "bcf_reader.hpp"
 
 // Version data configured by CMake during build
 #define PROJECT_VERSION_MAJOR @HHSelector_VERSION_MAJOR@
@@ -14,7 +18,7 @@ int app_main(const int argc, const char* argv[]);
 void emit_version_text();
 
 /**
- * Primary logic of the data reading and processing.
+ * Top level logic for reading, processing, and output.
  */
 bool run(const AppControlData&);
 
@@ -22,3 +26,16 @@ bool run(const AppControlData&);
  * Abstract the command line args from the information to control the execution of the application.
 */
 bool parse_cli_args(const int argc, const char* argv[], AppControlData& controls);
+
+/* Random selection of het and hom samples */
+std::vector<std::string> random_samples(const BcfReader& bcf, std::mt19937& gen,
+                                        const std::vector<int>& idxs, const int n);
+
+std::vector<std::string> random_hets(const BcfReader& bcf, std::mt19937& gen, const int n);
+
+/*
+ * Emit output to stdout
+ */
+void emit_header(const int seed, const int n_sample);
+void emit_selection(const BcfReader& bcf, const std::vector<std::string>& hets,
+                    const std::vector<std::string>& homs);

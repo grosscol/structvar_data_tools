@@ -30,15 +30,7 @@ TEST(ControlFlow, HelpReturn) {
   const int argc{2};
   int retval;
 
-	/* Capture cout */
-	std::stringstream buffer;
-	std::streambuf *old_buff = std::cout.rdbuf();
-	std::cout.rdbuf(buffer.rdbuf());
-
   retval = app_main(argc, argv);
-
-	/* Restore cout */
-	std::cout.rdbuf(old_buff);
 
   EXPECT_EQ(retval, EXIT_SUCCESS);
 };
@@ -56,3 +48,15 @@ TEST(ControlFlow, DataOpen){
 
   EXPECT_EQ(retval, EXIT_SUCCESS);
 };
+
+TEST(OptionParsing, DefaultInfile){
+  const char* argv[]{"testing_app"};
+  const int argc{1};
+  bool parse_success{false};
+
+  AppControlData app_ctl{};
+  parse_success = parse_cli_args(argc, argv, app_ctl);
+
+  EXPECT_TRUE(parse_success);
+  EXPECT_EQ(app_ctl.input_path, "-");
+}

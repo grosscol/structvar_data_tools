@@ -4,6 +4,11 @@
 #include "app_control_data.hpp"
 #include "bcf_reader.hpp"
 
+// Program title configured by CMake during build
+#define PROGRAM_TITLE "@PROGRAM_TITLE@"
+#define PROGRAM_NAME "@CLI_NAME@"
+#define PROGRAM_DESCRIPTION @HHSelector_DESCRIPTION@
+
 // Version data configured by CMake during build
 #define PROJECT_VERSION_MAJOR @HHSelector_VERSION_MAJOR@
 #define PROJECT_VERSION_MINOR @HHSelector_VERSION_MINOR@
@@ -27,7 +32,7 @@ bool run(const AppControlData&);
 */
 bool parse_cli_args(const int argc, const char* argv[], AppControlData& controls);
 
-/* Random selection of het and hom samples */
+/* Random selection of sample ids of given het and hom sample indexes */
 std::vector<std::string> random_samples(const BcfReader& bcf, std::mt19937& gen,
                                         const std::vector<int>& idxs, const int n);
 
@@ -36,6 +41,6 @@ std::vector<std::string> random_hets(const BcfReader& bcf, std::mt19937& gen, co
 /*
  * Emit output to stdout
  */
-void emit_header(const int seed, const int n_sample);
+void emit_header(const int seed, const int n_sample, const bool emit_id);
 void emit_selection(const BcfReader& bcf, const std::vector<std::string>& hets,
-                    const std::vector<std::string>& homs);
+                    const std::vector<std::string>& homs, const bool emit_id);

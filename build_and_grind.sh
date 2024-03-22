@@ -4,35 +4,53 @@
 set -e
 cmake --build ./build
 
+INPUT_DATA=test/data/structvar_sample_input.vcf
+# Positional args for random sample of file input
 valgrind --show-leak-kinds=definite,indirect,possible --leak-check=full \
-  --verbose --track-origins=yes --log-file=valgrind.zero.out --suppressions=./valgrind.supp \
-  ./het_hom_sel --file test/data/structvar_sample_input.vcf > /tmp/zero.out 2> /tmp/zero.err
+  --verbose --track-origins=yes --log-file=/tmp/valgrind.rnd.out --suppressions=./valgrind.supp \
+  ./het_hom_sel rnd ${INPUT_DATA} > /tmp/hhs_rnd.out 2> /tmp/hhs_rnd.err
 
+# Positional args for all samples and variant ids of file input
 valgrind --show-leak-kinds=definite,indirect,possible --leak-check=full \
-  --verbose --track-origins=yes --log-file=valgrind.zero.stdin.out --suppressions=./valgrind.supp \
-  ./het_hom_sel < test/data/structvar_sample_input.vcf > /tmp/zero.stdin.out 2> /tmp/zero.stdin.err
+  --verbose --track-origins=yes --log-file=/tmp/valgrind.all.out --suppressions=./valgrind.supp \
+  ./het_hom_sel --emit-id all ${INPUT_DATA} > /tmp/hhs_all.out 2> /tmp/hhs_all.err
 
+# Input via stdin
 valgrind --show-leak-kinds=definite,indirect,possible --leak-check=full \
-  --verbose --track-origins=yes --log-file=valgrind.nonzero.out --suppressions=./valgrind.supp \
-  ./het_hom_sel --file test/data/no_such_file.vcf > /tmp/nonzero.out 2> /tmp/nonzero.err 
+  --verbose --track-origins=yes --log-file=/tmp/valgrind.rnd.stdin.out --suppressions=./valgrind.supp \
+  ./het_hom_sel rnd < ${INPUT_DATA} > /tmp/hhs_rnd.stdin.out 2> /tmp/hhs_rnd.stdin.err
+
+# Positional args for bad input
+valgrind --show-leak-kinds=definite,indirect,possible --leak-check=full \
+  --verbose --track-origins=yes --log-file=/tmp/valgrind.nonzero.out --suppressions=./valgrind.supp \
+  ./het_hom_sel rnd test/data/no_such_file.vcf > /tmp/nonzero.out 2> /tmp/nonzero.err
 
 echo "Running Valgrind"
 
-cat /tmp/zero.out
+echo "Rnd Samples Output:"
+tail /tmp/hhs_rnd.out
+echo ""
+echo "All Samples Output:"
+tail /tmp/hhs_all.out
 
 echo ""
-echo "------ VALGRIND: EXIT 0 -------------------"
+echo "------ VALGRIND: RND ----------------------"
 echo -n "|"
-grep -A4 'LEAK SUMMARY' < valgrind.zero.out | grep -o 'lost:.*bytes' | tr '\n' '|'
+grep -A4 'LEAK SUMMARY' < /tmp/valgrind.rnd.out | grep -o 'lost:.*bytes' | tr '\n' '|'
 echo ""
 
-echo "------ VALGRIND: STDIN  -------------------"
+echo "------ VALGRIND: ALL ----------------------"
 echo -n "|"
-grep -A4 'LEAK SUMMARY' < valgrind.zero.stdin.out | grep -o 'lost:.*bytes' | tr '\n' '|'
+grep -A4 'LEAK SUMMARY' < /tmp/valgrind.all.out | grep -o 'lost:.*bytes' | tr '\n' '|'
+echo ""
+
+echo "------ VALGRIND: RND STDIN ----------------"
+echo -n "|"
+grep -A4 'LEAK SUMMARY' < /tmp/valgrind.rnd.stdin.out | grep -o 'lost:.*bytes' | tr '\n' '|'
 echo ""
 
 echo "------ VALGRIND: EXIT 1 -------------------"
 echo -n "|"
-grep -A4 'LEAK SUMMARY' < valgrind.nonzero.out | grep -o 'lost:.*bytes' | tr '\n' '|'
+grep -A4 'LEAK SUMMARY' < /tmp/valgrind.nonzero.out | grep -o 'lost:.*bytes' | tr '\n' '|'
 echo ""
 echo "-------------------------------------------"

@@ -44,9 +44,10 @@ int BcfReader::n_hets() const{ return m_het_sample_id_idxs.size(); }
 int BcfReader::n_homs() const{ return m_hom_sample_id_idxs.size(); }
 
 int64_t BcfReader::pos() const{ return m_pos; }
-std::string BcfReader::chr() const{ return m_chr; }
-std::string BcfReader::ref() const{ return m_ref; }
-std::string BcfReader::alt() const{ return m_alt; }
+const std::string& BcfReader::chr() const{ return m_chr; }
+const std::string& BcfReader::id()  const{ return m_id;  }
+const std::string& BcfReader::ref() const{ return m_ref; }
+const std::string& BcfReader::alt() const{ return m_alt; }
 
 const std::vector<int>& BcfReader::het_idxs() const{
   return m_het_sample_id_idxs;
@@ -69,7 +70,7 @@ bool BcfReader::next_variant(){
   m_het_sample_id_idxs.clear();
   m_hom_sample_id_idxs.clear();
   parse_genotypes();
-  parse_chr_pos_ref_alt();
+  parse_variant_core();
   return true;
 }
 
@@ -107,13 +108,14 @@ void BcfReader::read_genotypes(){
   gt_array.reset(init_ptr);
 }
 
-void BcfReader::parse_chr_pos_ref_alt(){
+void BcfReader::parse_variant_core(){
   bcf_unpack(variant, BCF_UN_STR);
 
   m_ref = std::string{variant->d.allele[0]};
   m_alt = std::string{variant->d.allele[1]};
   m_chr = std::string{bcf_hdr_id2name(header, variant->rid)};
   m_pos = variant->pos;
+  m_id  = std::string(variant->d.id);
 }
 
 void BcfReader::print_genotypes() const{

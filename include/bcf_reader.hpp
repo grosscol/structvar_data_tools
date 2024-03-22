@@ -33,15 +33,14 @@ class BcfReader {
     int n_hets() const;
     int n_homs() const;
     int64_t pos() const;
-    std::string chr() const;
-    std::string ref() const;
-    std::string alt() const;
+    const std::string& id() const;
+    const std::string& chr() const;
+    const std::string& ref() const;
+    const std::string& alt() const;
 
     const std::vector<int>& het_idxs() const;
     const std::vector<int>& hom_idxs() const;
     void print_genotypes() const;
-
-    void scratch();
 
   private:
     std::string m_in_path{};
@@ -60,6 +59,7 @@ class BcfReader {
 
     std::string m_chr{};
     int64_t m_pos{0};
+    std::string m_id{};
     std::string m_ref{};
     // Assumes only one alt per record
     std::string m_alt{};
@@ -80,10 +80,10 @@ class BcfReader {
     */
     void read_genotypes();
 
-    /* parse out first four vcf columns */
-    void parse_chr_pos_ref_alt();
+    /* Parse CHROM POS ID REF ALT of variant record */
+    void parse_variant_core();
 
-    /* parse out indexes of het and hom samples */
+    /* Parse indexes of het and hom samples */
     void parse_genotypes();
 };
 

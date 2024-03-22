@@ -48,7 +48,9 @@ int app_main(const int argc, const char* argv[]) {
 }
 
 void emit_version_text(){
-  std::cout<<"Version: "
+  std::cout
+    << PROGRAM_TITLE << "\n"
+    << "Version: "
     << PROJECT_VERSION_MAJOR << "."
     << PROJECT_VERSION_MINOR << "."
     << PROJECT_VERSION_PATCH << "\n";
@@ -57,31 +59,60 @@ void emit_version_text(){
 
 bool parse_cli_args(const int argc, const char* argv[], AppControlData& controls){
 
-  po::options_description desc {"Program options"};
+  // Break up options to hide flags for positional args
+  po::options_description desc{"OPTIONS"};
+  po::options_description hidden{"Hidden positional options"};
+  po::options_description full_opts{"All options"};
+  po::positional_options_description pos_opts{};
   po::variables_map vm {};
 
+  desc.add_options()
+      ("help,h", "Print usage and exit.")
+      ("version,v", "Print version and exit.")
+      ("num,n", po::value(&controls.num_rnd_samples), "Number of samples to take.")
+      ("seed,s", po::value(&controls.rnd_seed), "Seed for PRNG.")
+      ("emit-id", po::bool_switch(&controls.emit_id), "Include ID column in output.")
+  ;
+
+  hidden.add_options()
+      ("action", po::value(&controls.action), "Select random ids (rnd) or all ids (all). Required")
+      ("file", po::value(&controls.input_path), "Path to input file.")
+  ;
+
+  pos_opts.add("action", 1);
+  pos_opts.add("file", 1);
+
+  full_opts.add(desc);
+  full_opts.add(hidden);
+
+  po::command_line_parser clp{argc, argv};
+  clp.options(full_opts)
+     .positional(pos_opts);
+
   try {
-    desc.add_options()
-        ("help,h", "Print usage and exit.")
-        ("version,v", "Print version and exit.")
-        ("file,f", po::value(&controls.input_path), "Path to input file.")
-        ("num,n", po::value(&controls.num_rnd_samples), "Number of samples to take.")
-        ("seed,s", po::value(&controls.rnd_seed), "Seed for PRNG.")
-    ;
+    po::store(clp.run(), vm);
 
-    po::store(po::parse_command_line(argc, argv, desc), vm);
-    po::notify(vm);
-
-    // Handle here the event that requires desc.  Avoid needing desc outside of this scope.
     if (vm.count("help")) {
-      std::cout << desc << "\n";
+      emit_version_text();
+      std::cout
+        << "Usage:" << "\n"
+        << "  " << PROGRAM_NAME << " <ACTION> [OPTIONS] [FILE]" << "\n"
+        << desc << "\n"
+        << "ACTION" << "\n"
+        << "  rnd: Emit <num> random het and hom sample ids for each variant (default)." << "\n"
+        << "  all: Emit all het and homs for each variant." << "\n";
       controls.just_exit = true;
     }
 
-    if (vm.count("version")) {
+    if(vm.count("version")) {
       controls.print_version = true;
       controls.just_exit = true;
     }
+
+    if(vm.count("action")) {
+    }
+
+    po::notify(vm);
 
     return true;
   }
@@ -118,18 +149,26 @@ std::vector<std::string> random_homs(const BcfReader& bcf, std::mt19937& gen, co
   return random_samples(bcf, gen, bcf.hom_idxs(), n);
 }
 
-void emit_header(const int seed, const int n_sample){
+void emit_header(const int seed, const int n_sample, const bool emit_id){
   std::cout<<"#RANDOM_SEED="<<std::to_string(seed)<<"\n"
     <<"#MAX_RANDOM_HOM_HETS=<<"<<std::to_string(n_sample)<<"\n"
     <<"#SAMPLES_USED=NA"<<"\n"
-    <<"#CHROM\tPOS\tREF\tALT\tHOM\tHET\n";
+    <<"#CHROM\tPOS\t";
+  if(emit_id){
+    std::cout<<"ID"<<'\t';
+  }
+  std::cout<<"REF\tALT\tHOM\tHET\n";
 }
 
 void emit_selection(const BcfReader& bcf, const std::vector<std::string>& hets,
-                    const std::vector<std::string>& homs){
+                    const std::vector<std::string>& homs, const bool emit_id){
   std::cout<<bcf.chr()<<'\t'
-    <<std::to_string(bcf.pos())<<'\t'
-    <<bcf.ref()<<'\t'
+    <<std::to_string(bcf.pos())<<'\t';
+
+  if(emit_id){
+    std::cout<<bcf.id()<<'\t';
+  }
+  std::cout<<bcf.ref()<<'\t'
     <<bcf.alt()<<'\t'
     <<alg::join(homs, ",")<<'\t'
     <<alg::join(hets, ",")
@@ -143,22 +182,28 @@ bool run(const AppControlData& control){
   try{
     BcfReader bcf{control.input_path};
 
-    emit_header(control.rnd_seed, control.num_rnd_samples);
+    emit_header(control.rnd_seed, control.num_rnd_samples, control.emit_id);
+
+    std::vector<std::string> out_het_ids{};
+    std::vector<std::string> out_hom_ids{};
 
     // Vars for sampling
     std::mt19937 rnd_gen{control.rnd_seed};
-    std::vector<std::string> rnd_het_ids{};
-    std::vector<std::string> rnd_hom_ids{};
 
     while(bcf.next_variant()){
 
-      rnd_het_ids = random_hets(bcf, rnd_gen, control.num_rnd_samples);
-      rnd_hom_ids = random_homs(bcf, rnd_gen, control.num_rnd_samples);
+      if(control.action == "rnd"){
+        out_het_ids = random_hets(bcf, rnd_gen, control.num_rnd_samples);
+        out_hom_ids = random_homs(bcf, rnd_gen, control.num_rnd_samples);
+      }else if(control.action == "all"){
+        out_het_ids = bcf.sample_idxs_to_ids(bcf.het_idxs());
+        out_hom_ids = bcf.sample_idxs_to_ids(bcf.hom_idxs());
+      }
 
-      emit_selection(bcf, rnd_het_ids, rnd_hom_ids);
+      emit_selection(bcf, out_het_ids, out_hom_ids, control.emit_id);
 
-      rnd_het_ids.clear();
-      rnd_hom_ids.clear();
+      out_het_ids.clear();
+      out_hom_ids.clear();
     }
   } catch(std::runtime_error& ex){
     std::cerr<<"Error creating BCF reader: "<<ex.what()<<"\n";

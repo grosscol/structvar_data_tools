@@ -60,3 +60,15 @@ TEST(OptionParsing, DefaultInfile){
   EXPECT_TRUE(parse_success);
   EXPECT_EQ(app_ctl.input_path, "-");
 }
+
+TEST(OptionParsing, ActionRequired){
+  const char* argv[]{"testing_app"};
+  const int argc{1};
+  bool parse_success{false};
+
+  AppControlData app_ctl{};
+  parse_success = parse_cli_args(argc, argv, app_ctl);
+
+  EXPECT_TRUE(parse_success);
+  EXPECT_EQ(app_ctl.action, "rnd");
+}

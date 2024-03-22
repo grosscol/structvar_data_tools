@@ -1,9 +1,10 @@
 cmake_minimum_required(VERSION 3.16)
 project(
   HHSelector
-  VERSION 0.1.0
-  DESCRIPTION "heterozygote and homozygote representative selector"
+  VERSION 0.2.0
+  DESCRIPTION "Select representative samples for each variant of VCF/BCF input."
   LANGUAGES CXX)
+set(PROGRAM_TITLE "Heterozygote and Homozygote Selector")
 
 # Module for getting external content
 include(FetchContent)

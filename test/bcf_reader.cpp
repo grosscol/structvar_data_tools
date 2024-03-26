@@ -1,20 +1,45 @@
 #include <gtest/gtest.h>
 #include <gmock/gmock.h>
 #include <filesystem>
+#include <vector>
 #include "structvar_fixture.hpp"
 #include "bcf_reader.hpp"
 
-TEST_F(StructVarTest, HeaderVersion){
-  BcfReader reader{test_data_path.string()};
+namespace fs = std::filesystem;
+/*******************************************************
+ * Parameterized tests to verify VCF & BCF inputs work *
+ *******************************************************/
+std::vector<std::string> input_path_strings(){
+  std::vector<std::string> path_strings{};
+
+  path_strings.push_back(
+    (fs::path{SRC_TEST_DATA_DIR} / fs::path{"structvar_sample_input.vcf"}).string());
+
+  // Only test using bcf if the tooling to produce the artifacts was present.
+  if(BCFTOOLS){
+    path_strings.push_back(
+      (fs::path{GENERATED_DATA_DIR} / fs::path{"structvar_sample_input.bcf"}).string());
+  }
+
+  return path_strings;
+}
+
+TEST_P(FilePathFixture, HeaderVersion){
+  std::string file_path = GetParam();
+  BcfReader reader{file_path};
+
   std::string version{reader.vcf_version()};
 
   EXPECT_EQ(version, "VCFv4.1") << "Version:" << version;
-};
+}
+INSTANTIATE_TEST_SUITE_P( HeaderVersion, FilePathFixture,
+    testing::ValuesIn(input_path_strings()));
 
-TEST_F(StructVarTest, ReadThroughFile){
-  BcfReader reader{test_data_path.string()};
+TEST_P(FilePathFixture, ReadThroughFile){
+  std::string file_path = GetParam();
+  BcfReader reader{file_path};
+
   int itt_count{0};
-
   while(reader.next_variant()){
     itt_count++;
   }
@@ -22,6 +47,28 @@ TEST_F(StructVarTest, ReadThroughFile){
   // 23 variants in the sample data
   EXPECT_EQ(itt_count, 23);
 }
+INSTANTIATE_TEST_SUITE_P( ReadThroughFile, FilePathFixture,
+    testing::ValuesIn(input_path_strings()));
+
+TEST_P(FilePathFixture, ExpectedSampleNames){
+  std::string file_path = GetParam();
+  BcfReader reader{file_path};
+
+  EXPECT_EQ(reader.sample_idx_to_id(0), "EXAMPLE01");
+  EXPECT_EQ(reader.sample_idx_to_id(4), "EXAMPLE05");
+  EXPECT_EQ(reader.sample_idx_to_id(9), "EXAMPLE10");
+
+  std::vector<int> input_ids{0,4,9};
+  EXPECT_THAT(reader.sample_idxs_to_ids(input_ids),
+              testing::ElementsAre("EXAMPLE01","EXAMPLE05","EXAMPLE10"));
+}
+INSTANTIATE_TEST_SUITE_P( ExpectedSampleNames, FilePathFixture,
+    testing::ValuesIn(input_path_strings()));
+
+
+/******************
+ * VCF only tests *
+ ******************/
 
 TEST_F(StructVarTest, NumberOfSamples){
   BcfReader reader{test_data_path.string()};
@@ -83,14 +130,3 @@ TEST_F(StructVarTest, ExpectedHetsAndHomsIndexes){
   EXPECT_THAT(reader.hom_idxs(), testing::ElementsAre(3,4));
 }
 
-TEST_F(StructVarTest, ExpectedSampleNames){
-  BcfReader reader{test_data_path.string()};
-
-  EXPECT_EQ(reader.sample_idx_to_id(0), "EXAMPLE01");
-  EXPECT_EQ(reader.sample_idx_to_id(4), "EXAMPLE05");
-  EXPECT_EQ(reader.sample_idx_to_id(9), "EXAMPLE10");
-
-  std::vector<int> input_ids{0,4,9};
-  EXPECT_THAT(reader.sample_idxs_to_ids(input_ids),
-              testing::ElementsAre("EXAMPLE01","EXAMPLE05","EXAMPLE10"));
-}

@@ -94,8 +94,8 @@ set(htslib_LIB ${htslib_INSTALL}/lib/libhts.a)
 ######################
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/bin)
-set(CONFIGURED_INCLUDE_PATH ${PROJECT_BINARY_DIR}/configured_include)
+set(EXECUTABLE_OUTPUT_PATH ${HHSelector_BINARY_DIR}/bin)
+set(CONFIGURED_INCLUDE_PATH ${HHSelector_BINARY_DIR}/configured_include)
 set(CLI_NAME het_hom_sel)
 
 # Directory for the cmake configured header files
@@ -145,8 +145,25 @@ target_link_libraries(${CLI_NAME} PRIVATE ${CLI_NAME}_lib)
 # Tests #
 #########
 
+# If available, use bcftools to create bcf artifacts to test against.
+find_program(BCFTOOLS bcftools)
+
+if(BCFTOOLS)
+  set(GENERATED_DATA_DIR ${HHSelector_BINARY_DIR}/Testing/data)
+  file(MAKE_DIRECTORY ${GENERATED_DATA_DIR})
+
+  set(VCF_TEST_FILE ${HHSelector_SOURCE_DIR}/test/data/structvar_sample_input.vcf)
+  set(BCF_TEST_FILE ${GENERATED_DATA_DIR}/structvar_sample_input.bcf)
+  message(STATUS "Generating: " structvar_sample_input.bcf)
+  execute_process( 
+    COMMAND ${BCFTOOLS} view --output-type b --output ${BCF_TEST_FILE} ${VCF_TEST_FILE}
+    )
+else()
+  message(STATUS "bcftools NOT found. BCF testing artifacts not built")
+endif()
+
 # Make full path to test data directory available in testing header file
-set(TEST_DATA_DIR ${CMAKE_SOURCE_DIR}/test/data)
+set(SRC_TEST_DATA_DIR ${HHSelector_SOURCE_DIR}/test/data)
 configure_file(test/structvar_fixture.hpp.in ${CONFIGURED_INCLUDE_PATH}/structvar_fixture.hpp)
 
 add_executable(test_control
@@ -156,7 +173,7 @@ add_executable(test_control
 target_include_directories(test_control
   PUBLIC
     ${CONFIGURED_INCLUDE_PATH}
-    ${PROJECT_BINARY_DIR}
+    ${HHSelector_BINARY_DIR}
     ${CMAKE_SOURCE_DIR}/include
     ${CSV_INCLUDE_DIR})
 

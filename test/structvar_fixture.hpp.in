@@ -4,13 +4,23 @@
 #include <gtest/gtest.h>
 #include <filesystem>
 
-#define TEST_DATA_DIR "@TEST_DATA_DIR@"
+#define SRC_TEST_DATA_DIR "@SRC_TEST_DATA_DIR@"
+#define GENERATED_DATA_DIR "@GENERATED_DATA_DIR@"
+#cmakedefine01 BCFTOOLS
+
+namespace fs = std::filesystem;
 
 class StructVarTest : public testing::Test {
   protected:
-    std::filesystem::path test_data_dir{TEST_DATA_DIR};
+    std::filesystem::path test_data_dir{SRC_TEST_DATA_DIR};
     std::filesystem::path test_data_file{"structvar_sample_input.vcf"};
     std::filesystem::path test_data_path{test_data_dir / test_data_file};
 };
+
+/* Setup for testing both vcf and bcf inputs */
+class FilePathFixture : public testing::TestWithParam<std::string> {};
+
+fs::path vcf_path{fs::path{SRC_TEST_DATA_DIR} / fs::path{"structvar_sample_input.vcf"}};
+fs::path bcf_path{fs::path{GENERATED_DATA_DIR} / fs::path{"structvar_sample_input.bcf"}};
 
 #endif /* STRUCTVAR_FIXTURE */

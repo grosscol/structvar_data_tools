@@ -4,7 +4,6 @@
 #include <filesystem>
 #include "app_control_data.hpp"
 #include "app.hpp"
-#include "shared_test_fixtures.hpp"
 
 TEST(ControlFlow, VersionReturn) {
   const char* argv[]{"testing_app", "--version"};

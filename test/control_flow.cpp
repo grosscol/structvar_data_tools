@@ -4,6 +4,7 @@
 #include <filesystem>
 #include "app_control_data.hpp"
 #include "app.hpp"
+#include "structvar_fixture.hpp"
 
 TEST(ControlFlow, VersionReturn) {
   const char* argv[]{"testing_app", "--version"};
@@ -35,7 +36,7 @@ TEST(ControlFlow, HelpReturn) {
 };
 
 TEST(ControlFlow, DataOpen){
-  std::filesystem::path test_data_dir{TEST_DATA_DIR};
+  std::filesystem::path test_data_dir{SRC_TEST_DATA_DIR};
   std::filesystem::path test_data_file{"structvar_sample_input.vcf"};
   std::filesystem::path test_data_path{test_data_dir / test_data_file};
 

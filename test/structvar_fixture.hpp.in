@@ -20,7 +20,4 @@ class StructVarTest : public testing::Test {
 /* Setup for testing both vcf and bcf inputs */
 class FilePathFixture : public testing::TestWithParam<std::string> {};
 
-fs::path vcf_path{fs::path{SRC_TEST_DATA_DIR} / fs::path{"structvar_sample_input.vcf"}};
-fs::path bcf_path{fs::path{GENERATED_DATA_DIR} / fs::path{"structvar_sample_input.bcf"}};
-
 #endif /* STRUCTVAR_FIXTURE */

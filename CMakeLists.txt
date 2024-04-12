@@ -69,9 +69,9 @@ FetchContent_MakeAvailable(boost googletest)
 ##############
 set(htslib_PREFIX ${CMAKE_BINARY_DIR}/contrib/htslib-prefix)
 set(htslib_INSTALL ${CMAKE_BINARY_DIR}/contrib/htslib-install)
-
 if (CMAKE_GENERATOR STREQUAL "Unix Makefiles")
-    # when using the makefile generator, use the special variable $(MAKE) to invoke make
+    # When using the makefile generator, use the special variable $(MAKE) to invoke make
+    #   This handles recursive invokation of make within a makefile
     set(MAKE_COMMAND "$(MAKE)")
 else()
     # invoke make explicitly
@@ -87,10 +87,17 @@ ExternalProject_Add(
   CONFIGURE_COMMAND autoreconf -i && ./configure --without-libdeflate --prefix=${htslib_PREFIX}
   BUILD_COMMAND ${MAKE_COMMAND} lib-static
   INSTALL_COMMAND ${MAKE_COMMAND} install prefix=${htslib_INSTALL}
-  LOG_DOWNLOAD 1
+  LOG_DOWNLOAD 0
+  LOG_BUILD 0
 )
 
 set(htslib_LIB ${htslib_INSTALL}/lib/libhts.a)
+
+###############
+# SUPER BUILD #
+###############
+# Het Hom Selector build
+add_subdirectory(het_hom_selector)
 
 ######################
 # HH Selector Binary #
@@ -105,13 +112,15 @@ set(CLI_NAME het_hom_sel)
 file(MAKE_DIRECTORY ${CONFIGURED_INCLUDE_PATH})
 
 # Add VERSION info into application header file.
-configure_file(include/app.hpp.in ${CONFIGURED_INCLUDE_PATH}/app.hpp)
+configure_file(include/app.hpp.in configured_include/app.hpp)
 
 # Build static library of application logic
 add_library(${CLI_NAME}_lib
   STATIC
     src/bcf_reader.cpp
     src/app.cpp)
+
+add_dependencies(${CLI_NAME}_lib htslib)
 
 target_include_directories(${CLI_NAME}_lib
   PUBLIC
@@ -131,6 +140,7 @@ target_link_libraries(${CLI_NAME}_lib
     LibLZMA::LibLZMA
     CURL::libcurl
     OpenSSL::Crypto)
+
 
 # Build executable wrapper around application lib
 add_executable(${CLI_NAME}

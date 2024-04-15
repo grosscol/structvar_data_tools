@@ -4,6 +4,7 @@
 #include <vector>
 #include "structvar_fixture.hpp"
 #include "bcf_reader.hpp"
+#include <iostream>
 
 namespace fs = std::filesystem;
 /*******************************************************
@@ -71,6 +72,7 @@ INSTANTIATE_TEST_SUITE_P( ExpectedSampleNames, FilePathFixture,
  ******************/
 
 TEST_F(StructVarTest, NumberOfSamples){
+  std::cout<<"DEBUG: "<<test_data_path.string();
   BcfReader reader{test_data_path.string()};
 
   // 10 samples in the sample data

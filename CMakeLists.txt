@@ -13,6 +13,8 @@ include(FetchContent)
 include(CMakePrintHelpers)
 
 # Testing module
+#   Include CTest prior to any add_subdirectory.
+include(CTest)
 include(GoogleTest)
 
 # Requirements for HTSLib
@@ -93,126 +95,12 @@ ExternalProject_Add(
 
 set(htslib_LIB ${htslib_INSTALL}/lib/libhts.a)
 
-###############
-# SUPER BUILD #
-###############
-# Het Hom Selector build
+################################
+# BRAVO Data Tools Subprojects #
+################################
+
+# Het Hom Selector
 add_subdirectory(het_hom_selector)
-
-######################
-# HH Selector Binary #
-######################
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(EXECUTABLE_OUTPUT_PATH ${HHSelector_BINARY_DIR}/bin)
-set(CONFIGURED_INCLUDE_PATH ${HHSelector_BINARY_DIR}/configured_include)
-set(CLI_NAME het_hom_sel)
-
-# Directory for the cmake configured header files
-file(MAKE_DIRECTORY ${CONFIGURED_INCLUDE_PATH})
-
-# Add VERSION info into application header file.
-configure_file(include/app.hpp.in configured_include/app.hpp)
-
-# Build static library of application logic
-add_library(${CLI_NAME}_lib
-  STATIC
-    src/bcf_reader.cpp
-    src/app.cpp)
-
-add_dependencies(${CLI_NAME}_lib htslib)
-
-target_include_directories(${CLI_NAME}_lib
-  PUBLIC
-    ${CONFIGURED_INCLUDE_PATH}
-    ${CMAKE_SOURCE_DIR}/include
-  PRIVATE
-    ${htslib_INSTALL}/include
-    ${CSV_INCLUDE_DIR})
-
-target_link_libraries(${CLI_NAME}_lib
-  PRIVATE
-    ${htslib_LIB}
-    Boost::filesystem
-    Boost::program_options
-    ZLIB::ZLIB
-    BZip2::BZip2
-    LibLZMA::LibLZMA
-    CURL::libcurl
-    OpenSSL::Crypto)
-
-
-# Build executable wrapper around application lib
-add_executable(${CLI_NAME}
-  src/main.cpp)
-
-target_include_directories(${CLI_NAME}
-  PUBLIC
-    ${CONFIGURED_INCLUDE_PATH}
-    ${CMAKE_SOURCE_DIR}/include)
-
-target_link_libraries(${CLI_NAME} PRIVATE ${CLI_NAME}_lib)
-
-
-#########
-# Tests #
-#########
-
-# If available, use bcftools to create bcf artifacts to test against.
-find_program(BCFTOOLS bcftools)
-
-if(BCFTOOLS)
-  set(GENERATED_DATA_DIR ${HHSelector_BINARY_DIR}/Testing/data)
-  file(MAKE_DIRECTORY ${GENERATED_DATA_DIR})
-
-  set(VCF_TEST_FILE ${HHSelector_SOURCE_DIR}/test/data/structvar_sample_input.vcf)
-  set(BCF_TEST_FILE ${GENERATED_DATA_DIR}/structvar_sample_input.bcf)
-  message(STATUS "Generating: " structvar_sample_input.bcf)
-  execute_process( 
-    COMMAND ${BCFTOOLS} view --output-type b --output ${BCF_TEST_FILE} ${VCF_TEST_FILE}
-    )
-else()
-  message(STATUS "bcftools NOT found. BCF testing artifacts not built")
-endif()
-
-# Make full path to test data directory available in testing header file
-set(SRC_TEST_DATA_DIR ${HHSelector_SOURCE_DIR}/test/data)
-configure_file(test/structvar_fixture.hpp.in ${CONFIGURED_INCLUDE_PATH}/structvar_fixture.hpp)
-
-add_executable(test_control
-  test/bcf_reader.cpp
-  test/control_flow.cpp)
-
-target_include_directories(test_control
-  PUBLIC
-    ${CONFIGURED_INCLUDE_PATH}
-    ${HHSelector_BINARY_DIR}
-    ${CMAKE_SOURCE_DIR}/include
-    ${CSV_INCLUDE_DIR})
-
-target_link_libraries(test_control
-  GTest::gtest_main
-  GTest::gmock_main
-  ${CLI_NAME}_lib)
-
-enable_testing()
-gtest_discover_tests(test_control)
-
-###########
-# Scratch #
-###########
-add_executable(scratch
-  src/scratch.cpp)
-
-target_link_libraries(scratch
-  PRIVATE
-    ${htslib_LIB}
-    Boost::filesystem Boost::program_options
-    ZLIB::ZLIB
-    BZip2::BZip2
-    LibLZMA::LibLZMA
-    CURL::libcurl
-    OpenSSL::Crypto)
 
 ##########################################
 #            DEBUG CMake                 #

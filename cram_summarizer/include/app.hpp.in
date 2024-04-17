@@ -1,0 +1,29 @@
+#ifndef APP_HEADER
+#define APP_HEADER
+
+// Program name, version, and details configured by CMake during build.
+#define PROGRAM_TITLE "@PROGRAM_TITLE@"
+#define PROGRAM_NAME "@CLI_NAME@"
+#define PROGRAM_DESCRIPTION @PROJECT_DESCRIPTION@
+
+#define PROJECT_VERSION_MAJOR @PROJECT_VERSION_MAJOR@
+#define PROJECT_VERSION_MINOR @PROJECT_VERSION_MINOR@
+#define PROJECT_VERSION_PATCH @PROJECT_VERSION_PATCH@
+
+#include "app_control_data.hpp"
+
+/**
+ * CLI Boilerplate
+ * -  Entry point for the application.  Essentially, main, but can be linked against.
+ * -  Print version string
+ * -  Top level logic for reading, processing, and output.
+ * -  Parse CLI arguments into application control data.
+ */
+int app_main(const int argc, const char* argv[]);
+
+void emit_version_text();
+
+bool run(const AppControlData&);
+
+bool parse_cli_args(const int argc, const char* argv[], AppControlData& controls);
+#endif

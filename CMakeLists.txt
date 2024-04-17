@@ -1,10 +1,8 @@
 cmake_minimum_required(VERSION 3.16)
 project(
-  HHSelector
-  VERSION 0.3.0
-  DESCRIPTION "Select representative samples for each variant of VCF/BCF input."
+  StructVarTooling
+  DESCRIPTION "Tooling for extracting data about structural variants."
   LANGUAGES CXX)
-set(PROGRAM_TITLE "Heterozygote and Homozygote Selector")
 
 # Module for getting external content
 include(FetchContent)
@@ -101,6 +99,9 @@ set(htslib_LIB ${htslib_INSTALL}/lib/libhts.a)
 
 # Het Hom Selector
 add_subdirectory(het_hom_selector)
+
+# Cram Summarizer
+add_subdirectory(cram_summarizer)
 
 ##########################################
 #            DEBUG CMake                 #

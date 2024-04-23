@@ -58,13 +58,53 @@ target_link_libraries(${CLI_NAME} PRIVATE ${CLI_NAME}_lib)
 #########
 # Tests #
 #########
+message(STATUS "CRAM Test Data Generation")
 
-# If available, use bcftools to create bcf artifacts to test against.
+# If available, use samtools to create cram artifacts to test against.
 find_program(SAMTOOLS samtools)
 
+set(GENERATED_DATA_DIR ${CMAKE_BINARY_DIR}/Testing/data)
+file(MAKE_DIRECTORY ${GENERATED_DATA_DIR})
+
+# Enumerate fasta files
+file(GLOB FASTA_PATHS "test/data/*.fa")
+
 if(SAMTOOLS)
-  set(GENERATED_DATA_DIR ${CMAKE_BINARY_DIR}/Testing/data)
-  message(STATUS "Generating CRAMS placeholder")
+
+  foreach(FASTA IN LISTS FASTA_PATHS)
+    cmake_path(GET FASTA FILENAME FA_FILENAME)
+    cmake_path(REMOVE_EXTENSION FA_FILENAME OUTPUT_VARIABLE BASENAME)
+
+    # Copy Fasta into Generated Data & generate fasta index
+    file(COPY ${FASTA} DESTINATION ${GENERATED_DATA_DIR})
+    if(NOT EXISTS ${GENERATED_DATA_DIR}/${FA_FILENAME}.fai)
+      message(STATUS "Generating fai for: " ${FA_FILENAME})
+      execute_process(COMMAND ${SAMTOOLS} faidx ${GENERATED_DATA_DIR}/${FA_FILENAME})
+    endif()
+
+    # Enumerate SAM files corresponding to fasta basename
+    file(GLOB SAM_PATHS "test/data/${BASENAME}*.sam")
+
+    # Generate CRAMs using SAM and FASTA
+    foreach(SAM IN LISTS SAM_PATHS)
+      cmake_path(GET SAM FILENAME SAMPLE_NAME)
+      cmake_path(REMOVE_EXTENSION SAMPLE_NAME)
+      set(CRAM_OUTFILE ${GENERATED_DATA_DIR}/${SAMPLE_NAME}.cram)
+
+      if(NOT EXISTS ${CRAM_OUTFILE})
+        message(STATUS "Generating CRAM for: " ${SAMPLE_NAME})
+        execute_process(
+          COMMAND ${SAMTOOLS} view --cram
+            --reference ${GENERATED_DATA_DIR}/${FA_FILENAME}
+            --output ${GENERATED_DATA_DIR}/${SAMPLE_NAME}.cram
+            ${SAM})
+      else()
+        message(STATUS "CRAM exists for: " ${SAMPLE_NAME})
+      endif()
+
+    endforeach(SAM)
+  endforeach(FASTA)
+
 else()
   message(STATUS "samtools NOT found. CRAM testing artifacts not built.")
 endif()

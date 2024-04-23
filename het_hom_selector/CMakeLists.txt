@@ -72,10 +72,13 @@ if(BCFTOOLS)
 
   set(VCF_TEST_FILE ${CMAKE_CURRENT_SOURCE_DIR}/test/data/structvar_sample_input.vcf)
   set(BCF_TEST_FILE ${GENERATED_DATA_DIR}/structvar_sample_input.bcf)
-  message(STATUS "Generating: " structvar_sample_input.bcf)
-  execute_process( 
-    COMMAND ${BCFTOOLS} view --output-type b --output ${BCF_TEST_FILE} ${VCF_TEST_FILE}
-    )
+  if(NOT EXISTS ${BCF_TEST_FILE})
+    message(STATUS "Generating testing BCF file.")
+    execute_process(
+      COMMAND ${BCFTOOLS} view --output-type b --output ${BCF_TEST_FILE} ${VCF_TEST_FILE})
+  else()
+    message(STATUS "Testing BCF file already exists.")
+  endif()
 else()
   message(STATUS "bcftools NOT found. BCF testing artifacts not built")
 endif()

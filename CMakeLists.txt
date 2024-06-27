@@ -104,6 +104,26 @@ add_subdirectory(het_hom_selector)
 # Cram Summarizer
 add_subdirectory(cram_summarizer)
 
+###########
+# Scratch #
+###########
+
+add_executable(demo
+  scratch/demo.cpp)
+
+target_include_directories(demo
+  PRIVATE
+    ${htslib_INSTALL}/include)
+
+target_link_libraries(demo
+  PRIVATE
+    ${htslib_LIB}
+    ZLIB::ZLIB
+    BZip2::BZip2
+    LibLZMA::LibLZMA
+    CURL::libcurl
+    OpenSSL::Crypto)
+
 ##########################################
 #            DEBUG CMake                 #
 ##########################################

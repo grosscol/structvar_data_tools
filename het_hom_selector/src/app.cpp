@@ -109,9 +109,6 @@ bool parse_cli_args(const int argc, const char* argv[], AppControlData& controls
       controls.just_exit = true;
     }
 
-    if(vm.count("action")) {
-    }
-
     po::notify(vm);
 
     return true;

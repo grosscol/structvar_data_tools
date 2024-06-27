@@ -14,8 +14,12 @@ struct AppControlData {
   /**
    * Path to file(s) on disk.  Defaults to empty which reads from stdin.
    */
-  
-  std::vector<std::string> input_paths{};
+  std::string input_path{};
+
+  /**
+   * Path to reference fasta on disk required for reading cram files.
+   */
+  std::string ref_path{};
 
   /**
    * Should version string be printed to stdout.

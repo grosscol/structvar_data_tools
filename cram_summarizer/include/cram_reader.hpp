@@ -13,9 +13,13 @@ class CramReader {
     /* Advance reader */
     bool next_alignment();
 
+    /* Status checking */
+    bool has_sa_tag();
     bool is_mapq_sufficent();
+    bool meets_split_criteria();
+    bool meets_pair_criteria();
 
-    /* Flag Checking functions */
+    /* Flag checking */
     bool is_paired();
     bool is_proper_pair();
     bool is_unmapped();
@@ -29,9 +33,19 @@ class CramReader {
     bool is_duplicate();
     bool is_supplementary();
 
-    /* info field accessors */
+    /* Field accessors */
     uint32_t get_n_cigar();
     std::string get_cigar_string();
+    std::string get_sa_tag();
+
+    /* Process data */
+
+    // Sum lengths of matches, insertions, mismatches and skips. (MIXS)
+    static int alignment_ref_span(std::string cigar);
+    static std::vector<std::pair<int, char>> tokenize_cigar(const std::string& cigar);
+    int get_alignment_end();
+    int parse_sa_value();
+    int count_sa_tag();
 
   private:
     bam1_t*     alignment{};

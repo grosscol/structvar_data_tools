@@ -2,6 +2,7 @@
 #include <string>
 #include <stdexcept>
 #include <sstream>
+#include <vector>
 #include "cram_reader.hpp"
 #include "htslib/hts_log.h"
 #include "htslib/hts.h"
@@ -36,26 +37,10 @@ bool CramReader::next_alignment(){
   return ret_val == -1 ? false: true;
 }
 
-/***************************
- * Flag Checking functions *
- ***************************/
-bool CramReader::is_paired(){        return alignment->core.flag & BAM_FPAIRED; }
-bool CramReader::is_proper_pair(){   return alignment->core.flag & BAM_FPROPER_PAIR; }
-bool CramReader::is_unmapped(){      return alignment->core.flag & BAM_FUNMAP; }
-bool CramReader::is_mate_unmapped(){       return alignment->core.flag & BAM_FMUNMAP; }
-bool CramReader::is_reverse_strand(){      return alignment->core.flag & BAM_FREVERSE; }
-bool CramReader::is_mate_reverse_strand(){ return alignment->core.flag & BAM_FMREVERSE; }
-bool CramReader::is_read_1(){        return alignment->core.flag & BAM_FREAD1; }
-bool CramReader::is_read_2(){        return alignment->core.flag & BAM_FREAD2; }
-bool CramReader::is_secondary(){     return alignment->core.flag & BAM_FSECONDARY; }
-bool CramReader::is_qc_fail(){       return alignment->core.flag & BAM_FQCFAIL; }
-bool CramReader::is_duplicate(){     return alignment->core.flag & BAM_FDUP; }
-bool CramReader::is_supplementary(){ return alignment->core.flag & BAM_FSUPPLEMENTARY; }
 
-bool CramReader::is_mapq_sufficent(){
-  return alignment->core.qual > 1 && alignment->core.qual < 255;
-}
-
+/*******************
+ * Field Accessors *
+ ******************/
 uint32_t CramReader::get_n_cigar(){
   return alignment->core.n_cigar;
 }
@@ -79,3 +64,103 @@ std::string CramReader::get_cigar_string(){
 
   return sstream.str();
 }
+
+std::string CramReader::get_sa_tag(){
+  kstring_t kstr;
+  ks_initialize(&kstr);
+  int retcode = bam_aux_get_str(alignment,"SA", &kstr);
+
+  return retcode == 1 ? std::string(kstr.s) : "";
+}
+
+int CramReader::count_sa_tag(){
+  int count{0};
+
+  std::string sa_str = get_sa_tag();
+  for (auto& ch : sa_str){
+    if( ch == ';'){ count++; }
+  }
+
+  return count;
+}
+
+std::vector<std::pair<int, char>> CramReader::tokenize_cigar(const std::string& cigar){
+  std::vector<std::pair<int, char>> tokens{};
+  int position{0};
+  size_t used{0};
+  int count{0};
+  char operation{};
+
+  while(position < cigar.length()){
+    count = std::stoi(cigar.substr(position), &used);
+    position += used;
+
+    operation = cigar.at(position);
+    position++;
+
+    tokens.push_back(std::make_pair(count, operation));
+  }
+
+  return tokens;
+}
+
+int CramReader::alignment_ref_span(std::string cigar){
+  std::vector<std::pair<int, char>> tokens{CramReader::tokenize_cigar(cigar)};
+  int sum{0};
+
+  for( auto &token : tokens ){
+    switch(std::get<char>(token)) {
+      case 'M':
+      case 'D':
+      case 'N':
+      case 'X':
+        sum += std::get<int>(token);
+      default:
+        break;
+    }
+  }
+  return sum;
+}
+
+int CramReader::get_alignment_end(){
+
+  return 0;
+}
+
+/*****************
+ * Flag Checking *
+ ****************/
+bool CramReader::is_paired(){        return alignment->core.flag & BAM_FPAIRED; }
+bool CramReader::is_proper_pair(){   return alignment->core.flag & BAM_FPROPER_PAIR; }
+bool CramReader::is_unmapped(){      return alignment->core.flag & BAM_FUNMAP; }
+bool CramReader::is_mate_unmapped(){       return alignment->core.flag & BAM_FMUNMAP; }
+bool CramReader::is_reverse_strand(){      return alignment->core.flag & BAM_FREVERSE; }
+bool CramReader::is_mate_reverse_strand(){ return alignment->core.flag & BAM_FMREVERSE; }
+bool CramReader::is_read_1(){        return alignment->core.flag & BAM_FREAD1; }
+bool CramReader::is_read_2(){        return alignment->core.flag & BAM_FREAD2; }
+bool CramReader::is_secondary(){     return alignment->core.flag & BAM_FSECONDARY; }
+bool CramReader::is_qc_fail(){       return alignment->core.flag & BAM_FQCFAIL; }
+bool CramReader::is_duplicate(){     return alignment->core.flag & BAM_FDUP; }
+bool CramReader::is_supplementary(){ return alignment->core.flag & BAM_FSUPPLEMENTARY; }
+
+/*******************
+ * Status Checking *
+ ******************/
+bool CramReader::has_sa_tag(){
+  return bam_aux_get(alignment,"SA");
+}
+
+bool CramReader::is_mapq_sufficent(){
+  return alignment->core.qual > 1 && alignment->core.qual < 255;
+}
+
+bool CramReader::meets_pair_criteria(){
+  return !is_unmapped() && !is_secondary() && !is_supplementary() && is_paired();
+}
+
+bool CramReader::meets_split_criteria(){
+  return !is_secondary() && !is_supplementary() && has_sa_tag();
+}
+
+
+    int parse_sa_value();

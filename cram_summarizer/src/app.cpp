@@ -118,15 +118,36 @@ bool run(const AppControlData& control){
     int c_unmapped{0};
     int c_duplicate{0};
     int c_bad_mapq{0};
+    int c_paired{0};
+    int c_split{0};
+    int c_split_sa{0};
 
     while(cram.next_alignment()){
-      if(cram.is_qc_fail()){c_qc_fail++;}
-      if(cram.is_unmapped()){c_unmapped++;}
-      if(cram.is_duplicate()){c_duplicate++;}
-      if(!cram.is_mapq_sufficent()){c_bad_mapq++;}
+      if(cram.is_qc_fail()){
+        c_qc_fail++;
+        continue;
+      }
+      if(cram.is_unmapped()){
+        c_unmapped++;
+        continue; }
+      if(cram.is_duplicate()){
+        c_duplicate++;
+        continue;
+      }
+      if(!cram.is_mapq_sufficent()){
+        c_bad_mapq++;
+        continue;
+      }
+
+      if(cram.meets_pair_criteria()){  c_paired++; }
+      if(cram.meets_split_criteria()){
+        c_split++;
+        std::string sa_tag = cram.get_sa_tag();
+        c_split_sa += cram.count_sa_tag();
+      }
       count++;
 
-      std::cout<<cram.get_cigar_string()<<",";
+      CramReader::alignment_ref_span(cram.get_cigar_string());
 
     }
     std::cout
@@ -136,6 +157,9 @@ bool run(const AppControlData& control){
       <<" unmap: " << c_unmapped
       <<" dup: " << c_duplicate
       <<" mapq: " << c_bad_mapq
+      <<" paired: " << c_paired
+      <<" split: " << c_split
+      <<" split_sa: " << c_split_sa
       <<std::endl;
 
   } catch(std::runtime_error& ex){

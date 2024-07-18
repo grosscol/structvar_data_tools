@@ -111,7 +111,7 @@ bool parse_cli_args(const int argc, const char* argv[], AppControlData& controls
 
 bool run(const AppControlData& control){
   try{
-    CramReader cram{control.input_path, control.ref_path};
+    AlignmentReader reader{control.input_path, control.ref_path};
 
     int count{0};
     int c_qc_fail{0};
@@ -122,32 +122,32 @@ bool run(const AppControlData& control){
     int c_split{0};
     int c_split_sa{0};
 
-    while(cram.next_alignment()){
-      if(cram.is_qc_fail()){
+    while(reader.next_alignment()){
+      if(reader.is_qc_fail()){
         c_qc_fail++;
         continue;
       }
-      if(cram.is_unmapped()){
+      if(reader.is_unmapped()){
         c_unmapped++;
         continue; }
-      if(cram.is_duplicate()){
+      if(reader.is_duplicate()){
         c_duplicate++;
         continue;
       }
-      if(!cram.is_mapq_sufficent()){
+      if(!reader.is_mapq_sufficent()){
         c_bad_mapq++;
         continue;
       }
 
-      if(cram.meets_pair_criteria()){  c_paired++; }
-      if(cram.meets_split_criteria()){
+      if(reader.meets_pair_criteria()){  c_paired++; }
+      if(reader.meets_split_criteria()){
         c_split++;
-        std::string sa_tag = cram.get_sa_tag();
-        c_split_sa += cram.count_sa_tag();
+        std::string sa_tag = reader.get_sa_tag();
+        c_split_sa += reader.count_sa_tag();
       }
       count++;
 
-      CramReader::alignment_ref_span(cram.get_cigar_string());
+      AlignmentReader::reference_span(reader.get_cigar_string());
 
     }
     std::cout

@@ -5,10 +5,10 @@
 #include "htslib/hts.h"
 #include "htslib/sam.h"
 
-class CramReader {
+class AlignmentReader {
   public:
-    CramReader(const std::string& in_path, const std::string& ref_path, const bool silent = true);
-    ~CramReader();
+    AlignmentReader(const std::string& in_path, const std::string& ref_path, const bool silent = true);
+    ~AlignmentReader();
 
     /* Advance reader */
     bool next_alignment();
@@ -41,7 +41,7 @@ class CramReader {
     /* Process data */
 
     // Sum lengths of matches, insertions, mismatches and skips. (MIXS)
-    static int alignment_ref_span(std::string cigar);
+    static int reference_span(std::string cigar);
     static std::vector<std::pair<int, char>> tokenize_cigar(const std::string& cigar);
     int get_alignment_end();
     int parse_sa_value();

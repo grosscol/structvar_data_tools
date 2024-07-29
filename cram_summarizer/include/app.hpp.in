@@ -11,6 +11,29 @@
 #define PROJECT_VERSION_PATCH @PROJECT_VERSION_PATCH@
 
 #include "app_control_data.hpp"
+#include "cram_reader.hpp"
+#include "simple_alignment.hpp"
+#include "boost/json.hpp"
+#include <map>
+#include <iostream>
+
+// Classify alignments as split or paired end for output json object.
+enum AlnType : int { SPLIT, PAIRED };
+static std::map<int, std::string> AlnTypeJsonKeyMap{
+  {AlnType::SPLIT, "all_splits"}, {AlnType::PAIRED, "all_pairs"}
+};
+
+/* Accounting data for tracking counts of reads. */
+struct Accounting {
+  int64_t total{0};
+  int64_t qc_fail{0};
+  int64_t unmapped{0};
+  int64_t duplicate{0};
+  int64_t bad_mapq{0};
+  int64_t paired{0};
+  int64_t split{0};
+  int64_t split_sa{0};
+};
 
 /**
  * CLI Boilerplate
@@ -23,7 +46,17 @@ int app_main(const int argc, const char* argv[]);
 
 void emit_version_text();
 
+/**
+ * The business logic of the application.
+ * Behavior controlled by the configuration class passed to it.
+ */
 bool run(const AppControlData&);
 
 bool parse_cli_args(const int argc, const char* argv[], AppControlData& controls);
+
+boost::json::object init_top_level_json();
+SimpleAlignment make_simple_alignment(AlignmentReader& reader);
+void add_alignment(bj::object& all_data, SimpleAlignment& sa,  AlnType aln_type);
+void print_counts(Accounting& counts, std::ostream& dest);
+
 #endif

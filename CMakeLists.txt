@@ -45,9 +45,10 @@ endif()
 # Get Boost and GTest libraries #
 #################################
 if(POLICY CMP0135)
+  # Set the timestamps of all FetchConent or ExternalProject to the time of the extraction.
   cmake_policy(SET CMP0135 NEW)
 endif()
-set(BOOST_INCLUDE_LIBRARIES thread filesystem system program_options)
+set(BOOST_INCLUDE_LIBRARIES thread filesystem system program_options json)
 set(BOOST_ENABLE_CMAKE ON)
 
 FetchContent_Declare(

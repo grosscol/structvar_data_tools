@@ -9,8 +9,9 @@ set(PROGRAM_TITLE "Cram Summarizer")
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(EXECUTABLE_OUTPUT_PATH bin)
+
 set(CONFIGURED_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/configured_include)
-set(CLI_NAME read_summ)
+set(CLI_NAME cram_summ)
 
 # Directory for the cmake configured header files
 file(MAKE_DIRECTORY ${CONFIGURED_INCLUDE_DIR})
@@ -22,6 +23,7 @@ configure_file(include/app.hpp.in ${CONFIGURED_INCLUDE_DIR}/app.hpp)
 add_library(${CLI_NAME}_lib
   STATIC
     src/cram_reader.cpp
+    src/simple_alignment.cpp
     src/app.cpp)
 
 add_dependencies(${CLI_NAME}_lib htslib)
@@ -34,6 +36,8 @@ target_include_directories(${CLI_NAME}_lib
     ${htslib_INSTALL}/include)
 
 target_link_libraries(${CLI_NAME}_lib
+  PUBLIC
+    Boost::json
   PRIVATE
     ${htslib_LIB}
     Boost::filesystem
@@ -53,7 +57,10 @@ target_include_directories(${CLI_NAME}
   ${CONFIGURED_INCLUDE_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-target_link_libraries(${CLI_NAME} PRIVATE ${CLI_NAME}_lib)
+target_link_libraries(${CLI_NAME}
+  PRIVATE
+    ${CLI_NAME}_lib
+  )
 
 #########
 # Tests #

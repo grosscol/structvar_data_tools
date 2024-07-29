@@ -65,6 +65,10 @@ std::string AlignmentReader::get_cigar_string(){
   return sstream.str();
 }
 
+std::string AlignmentReader::get_query_name(){
+  return std::string( bam_get_qname(alignment) );
+}
+
 std::string AlignmentReader::get_sa_tag(){
   kstring_t kstr;
   ks_initialize(&kstr);
@@ -73,6 +77,26 @@ std::string AlignmentReader::get_sa_tag(){
   return retcode == 1 ? std::string(kstr.s) : "";
 }
 
+bool AlignmentReader::is_forward_strand(){
+  return !bam_is_rev(alignment);
+}
+
+int64_t AlignmentReader::get_start(){
+  return alignment->core.pos;
+}
+
+int64_t AlignmentReader::get_end(){
+  return alignment->core.pos + reference_span(get_cigar_string());
+}
+
+std::string AlignmentReader::get_chrom(){
+  int tid = alignment->core.tid;
+  return std::string(header->target_name[tid]);
+}
+
+/****************
+ * Process Data *
+ ***************/
 int AlignmentReader::count_sa_tag(){
   int count{0};
 
@@ -104,7 +128,7 @@ std::vector<std::pair<int, char>> AlignmentReader::tokenize_cigar(const std::str
   return tokens;
 }
 
-int AlignmentReader::reference_span(std::string cigar){
+int AlignmentReader::reference_span(const std::string& cigar){
   std::vector<std::pair<int, char>> tokens{AlignmentReader::tokenize_cigar(cigar)};
   int sum{0};
 
@@ -124,6 +148,10 @@ int AlignmentReader::reference_span(std::string cigar){
 
 int AlignmentReader::get_alignment_end(){
 
+  return 0;
+}
+
+int parse_sa_value(){
   return 0;
 }
 
@@ -161,6 +189,3 @@ bool AlignmentReader::meets_pair_criteria(){
 bool AlignmentReader::meets_split_criteria(){
   return !is_secondary() && !is_supplementary() && has_sa_tag();
 }
-
-
-    int parse_sa_value();

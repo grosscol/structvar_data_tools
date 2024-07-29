@@ -37,11 +37,18 @@ class AlignmentReader {
     uint32_t get_n_cigar();
     std::string get_cigar_string();
     std::string get_sa_tag();
+    std::string get_query_name();
+    std::string get_chrom();
+    bool is_forward_strand();
+    int64_t get_start();
+    int64_t get_end();
+
 
     /* Process data */
 
-    // Sum lengths of matches, insertions, mismatches and skips. (MIXS)
-    static int reference_span(std::string cigar);
+    // Calculate number of base pairs on reference that the aligment spans by
+    //   sum of base pair counts of matches, insertions, mismatches and skips. (MDNX)
+    static int reference_span(const std::string& cigar);
     static std::vector<std::pair<int, char>> tokenize_cigar(const std::string& cigar);
     int get_alignment_end();
     int parse_sa_value();

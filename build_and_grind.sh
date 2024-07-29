@@ -58,7 +58,7 @@ echo "-------------------------------------------"
 echo "Read Summarizer Valgrind"
 
 RS_DATA=cram_summarizer/test/data/del_1_sample_1.sam
-RS_BIN=build/cram_summarizer/bin/read_summ
+RS_BIN=build/cram_summarizer/bin/cram_summ
 
 # Positional args for random sample of file input
 valgrind --show-leak-kinds=definite,indirect,possible --leak-check=full \

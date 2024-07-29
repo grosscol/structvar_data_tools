@@ -1,11 +1,8 @@
-#include <iostream>
+#include "app.hpp"
 #include "boost/program_options.hpp"
 
-#include "app_control_data.hpp"
-#include "app.hpp"
-#include "cram_reader.hpp"
-
 namespace po = boost::program_options;
+namespace bj = boost::json;
 
 int app_main(const int argc, const char* argv[]) {
 
@@ -109,63 +106,88 @@ bool parse_cli_args(const int argc, const char* argv[], AppControlData& controls
   }
 }
 
+SimpleAlignment make_simple_alignment(AlignmentReader& reader){
+  return SimpleAlignment(
+      reader.get_query_name(),
+      reader.get_chrom(),
+      reader.get_start(),
+      reader.get_end(),
+      reader.is_forward_strand());
+}
+
+void add_alignment(bj::object& container, SimpleAlignment& sa,  AlnType aln_type){
+  std::cout << sa.qname << std::endl;
+}
+
+bj::object init_top_level_json(){
+  bj::object obj {};
+
+  for(auto const& aln_kv : AlnTypeJsonKeyMap){
+    obj[ aln_kv.second ] = bj::object{};
+  }
+  return obj;
+}
+
+void print_counts(Accounting& counts, std::ostream& dest){
+  dest
+    <<std::endl
+    << "cnt: " << counts.total
+    <<" qc: " << counts.qc_fail
+    <<" unmap: " << counts.unmapped
+    <<" dup: " << counts.duplicate
+    <<" mapq: " << counts.bad_mapq
+    <<" paired: " << counts.paired
+    <<" split: " << counts.split
+    <<" split_sa: " << counts.split_sa
+    <<std::endl;
+}
+
 bool run(const AppControlData& control){
+
+  bj::object all_data = init_top_level_json();
+  Accounting counts;
+
   try{
     AlignmentReader reader{control.input_path, control.ref_path};
 
-    int count{0};
-    int c_qc_fail{0};
-    int c_unmapped{0};
-    int c_duplicate{0};
-    int c_bad_mapq{0};
-    int c_paired{0};
-    int c_split{0};
-    int c_split_sa{0};
-
     while(reader.next_alignment()){
+      // Validity checking
       if(reader.is_qc_fail()){
-        c_qc_fail++;
+        counts.qc_fail++;
         continue;
       }
       if(reader.is_unmapped()){
-        c_unmapped++;
+        counts.unmapped++;
         continue; }
       if(reader.is_duplicate()){
-        c_duplicate++;
+        counts.duplicate++;
         continue;
       }
       if(!reader.is_mapq_sufficent()){
-        c_bad_mapq++;
+        counts.bad_mapq++;
         continue;
       }
 
-      if(reader.meets_pair_criteria()){  c_paired++; }
-      if(reader.meets_split_criteria()){
-        c_split++;
-        std::string sa_tag = reader.get_sa_tag();
-        c_split_sa += reader.count_sa_tag();
-      }
-      count++;
+      SimpleAlignment sa = make_simple_alignment(reader);
 
-      AlignmentReader::reference_span(reader.get_cigar_string());
+      if(reader.meets_pair_criteria()){  counts.paired++; }
+      if(reader.meets_split_criteria()){
+        counts.split++;
+        std::string sa_tag = reader.get_sa_tag();
+        counts.split_sa += reader.count_sa_tag();
+      }
+
+      counts.total++;
 
     }
-    std::cout
-      <<std::endl
-      << "cnt: " << count
-      <<" qc: " << c_qc_fail
-      <<" unmap: " << c_unmapped
-      <<" dup: " << c_duplicate
-      <<" mapq: " << c_bad_mapq
-      <<" paired: " << c_paired
-      <<" split: " << c_split
-      <<" split_sa: " << c_split_sa
-      <<std::endl;
+    //debugging
+    print_counts(counts, std::cout);
 
   } catch(std::runtime_error& ex){
     std::cerr<<"Error creating CRAM reader: "<<ex.what()<<"\n";
     return false;
   }
 
+  std::cout<<all_data<<std::endl;
   return true;
 }

@@ -16,6 +16,7 @@
 #include "boost/json.hpp"
 #include <map>
 #include <iostream>
+#include <vector>
 
 // Classify alignments as split or paired end for output json object.
 enum AlnType : int { SPLIT, PAIRED };
@@ -34,6 +35,8 @@ struct Accounting {
   int64_t split{0};
   int64_t split_sa{0};
 };
+
+typedef std::map<std::string, std::vector<SimpleAlignment>> aln_type_map;
 
 /**
  * CLI Boilerplate
@@ -56,7 +59,12 @@ bool parse_cli_args(const int argc, const char* argv[], AppControlData& controls
 
 boost::json::object init_top_level_json();
 SimpleAlignment make_simple_alignment(AlignmentReader& reader);
-void add_alignment(bj::object& all_data, SimpleAlignment& sa,  AlnType aln_type);
 void print_counts(Accounting& counts, std::ostream& dest);
+
+
+/**
+ * Add alignment under top level key for given aligntment type.
+ */
+void add_alignment(bj::object& all_data, SimpleAlignment& sa,  AlnType aln_type);
 
 #endif

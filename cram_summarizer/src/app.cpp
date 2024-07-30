@@ -116,7 +116,14 @@ SimpleAlignment make_simple_alignment(AlignmentReader& reader){
 }
 
 void add_alignment(bj::object& container, SimpleAlignment& sa,  AlnType aln_type){
-  std::cout << sa.qname << std::endl;
+
+  // reference to top level all_splits or all_pairs
+  bj::object& aln_type_container = container[AlnTypeJsonKeyMap[aln_type]].as_object();
+
+  if(!aln_type_container.contains(sa.qname)) {
+    aln_type_container[sa.qname] = bj::array{};
+  }
+  aln_type_container[sa.qname].as_array().emplace_back(sa.to_json());
 }
 
 bj::object init_top_level_json(){
@@ -143,7 +150,6 @@ void print_counts(Accounting& counts, std::ostream& dest){
 }
 
 bool run(const AppControlData& control){
-
   bj::object all_data = init_top_level_json();
   Accounting counts;
 
@@ -167,26 +173,33 @@ bool run(const AppControlData& control){
         counts.bad_mapq++;
         continue;
       }
+      // Process alignment into output category.
 
       SimpleAlignment sa = make_simple_alignment(reader);
 
-      if(reader.meets_pair_criteria()){  counts.paired++; }
+      if(reader.meets_pair_criteria()){
+        counts.paired++;
+        add_alignment(all_data, sa, AlnType::PAIRED);
+      }
       if(reader.meets_split_criteria()){
         counts.split++;
         std::string sa_tag = reader.get_sa_tag();
         counts.split_sa += reader.count_sa_tag();
+
+        add_alignment(all_data, sa, AlnType::SPLIT);
       }
 
+
+
       counts.total++;
-
     }
-    //debugging
-    print_counts(counts, std::cout);
-
   } catch(std::runtime_error& ex){
     std::cerr<<"Error creating CRAM reader: "<<ex.what()<<"\n";
     return false;
   }
+
+  //debugging
+  print_counts(counts, std::cerr);
 
   std::cout<<all_data<<std::endl;
   return true;

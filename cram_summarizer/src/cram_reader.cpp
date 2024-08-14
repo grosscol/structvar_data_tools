@@ -3,7 +3,10 @@
 #include <stdexcept>
 #include <sstream>
 #include <vector>
+#include <algorithm>
+#include <cctype>
 #include "cram_reader.hpp"
+#include "app_utils.hpp"
 #include "htslib/hts_log.h"
 #include "htslib/hts.h"
 #include "htslib/sam.h"
@@ -69,12 +72,12 @@ std::string AlignmentReader::get_query_name(){
   return std::string( bam_get_qname(alignment) );
 }
 
-std::string AlignmentReader::get_sa_tag(){
+std::string_view AlignmentReader::get_sa_tag(){
   kstring_t kstr;
   ks_initialize(&kstr);
   int retcode = bam_aux_get_str(alignment,"SA", &kstr);
 
-  return retcode == 1 ? std::string(kstr.s) : "";
+  return retcode == 1 ? std::string_view(kstr.s) : "";
 }
 
 bool AlignmentReader::is_forward_strand(){
@@ -85,10 +88,6 @@ int64_t AlignmentReader::get_start(){
   return alignment->core.pos;
 }
 
-int64_t AlignmentReader::get_end(){
-  return alignment->core.pos + reference_span(get_cigar_string());
-}
-
 std::string AlignmentReader::get_chrom(){
   int tid = alignment->core.tid;
   return std::string(header->target_name[tid]);
@@ -97,15 +96,10 @@ std::string AlignmentReader::get_chrom(){
 /****************
  * Process Data *
  ***************/
+
 int AlignmentReader::count_sa_tag(){
-  int count{0};
-
-  std::string sa_str = get_sa_tag();
-  for (auto& ch : sa_str){
-    if( ch == ';'){ count++; }
-  }
-
-  return count;
+  std::string_view sa_str = get_sa_tag();
+  return std::count_if(sa_str.begin(), sa_str.end(), [](char c){return c == ';';});
 }
 
 std::vector<std::pair<int, char>> AlignmentReader::tokenize_cigar(const std::string& cigar){
@@ -128,8 +122,31 @@ std::vector<std::pair<int, char>> AlignmentReader::tokenize_cigar(const std::str
   return tokens;
 }
 
-int AlignmentReader::reference_span(const std::string& cigar){
-  std::vector<std::pair<int, char>> tokens{AlignmentReader::tokenize_cigar(cigar)};
+std::vector<std::pair<int, char>> AlignmentReader::tokenize_cigar(const std::string_view cigar){
+  std::string_view digits{"0123456789"};
+  std::vector<std::pair<int, char>> tokens{};
+  size_t position{0};
+  size_t op_position{0};
+  int count{0};
+  char operation{};
+
+  while(position < cigar.length()){
+    // position of the next operation charater
+    op_position = cigar.find_first_not_of(digits, position);
+    operation = cigar.at(op_position);
+
+    // count preceeds the operation character
+    view_to_numeric(cigar.substr(position, op_position-position), count);
+
+    tokens.push_back(std::make_pair(count, operation));
+
+    position = op_position + 1;
+  }
+
+  return tokens;
+}
+
+int AlignmentReader::reference_span_from_tokens(const std::vector<std::pair<int, char>>& tokens){
   int sum{0};
 
   for( auto &token : tokens ){
@@ -146,13 +163,18 @@ int AlignmentReader::reference_span(const std::string& cigar){
   return sum;
 }
 
-int AlignmentReader::get_alignment_end(){
-
-  return 0;
+int AlignmentReader::reference_span(const std::string& cigar){
+  std::vector<std::pair<int, char>> tokens{tokenize_cigar(cigar)};
+  return reference_span_from_tokens(tokens);
 }
 
-int parse_sa_value(){
-  return 0;
+int AlignmentReader::reference_span(const std::string_view& cigar){
+  std::vector<std::pair<int, char>> tokens{tokenize_cigar(cigar)};
+  return reference_span_from_tokens(tokens);
+}
+
+int64_t AlignmentReader::get_end(){
+  return alignment->core.pos + reference_span(get_cigar_string());
 }
 
 /*****************

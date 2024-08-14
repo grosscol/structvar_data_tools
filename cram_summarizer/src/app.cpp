@@ -1,5 +1,8 @@
 #include "app.hpp"
 #include "boost/program_options.hpp"
+#include "app_utils.hpp"
+#include <ranges>
+#include <iomanip>
 
 namespace po = boost::program_options;
 namespace bj = boost::json;
@@ -115,6 +118,88 @@ SimpleAlignment make_simple_alignment(AlignmentReader& reader){
       reader.is_forward_strand());
 }
 
+SimpleAlignment make_simple_alignment(const std::string& qname, const std::vector<std::string_view>& fields){
+  // Each supplemental alignment (SA tag) record should have 6 fields:
+  //   rname, pos, strand, CIGAR, mapQ, NM
+  // Each SimpleAlignment has 5 fields:
+  //   qname, chrom, start, end, strand
+
+  bool is_forward_strand{fields[2] == "+" ? true : false};
+
+  // Convert string_view to int for start fields[1]
+  int pos{0};
+  view_to_numeric(fields[1], pos);
+
+  std::vector<std::pair<int, char>> tokens{AlignmentReader::tokenize_cigar(fields[3])};
+  int end{pos + AlignmentReader::reference_span_from_tokens(tokens)};
+
+  return SimpleAlignment(
+      std::string(qname),
+      std::string(fields[0]),
+      pos,
+      end,
+      is_forward_strand);
+}
+
+std::vector<std::string_view> parse_sa_record(std::string_view record){
+	constexpr std::string_view field_delim{","};
+  std::vector<std::string_view> fields{};
+  fields.reserve(6);
+
+  // Must be five delimiters and the tag identifier must be present.
+  size_t count = std::count_if(record.begin(), record.end(), [](char c){return c == ',';});
+  if(count != 5 || record.substr(0,5) != "SA:Z:"){
+    return fields;
+  }
+
+  // First five characters are tag identifier. Field data begins at 6th character.
+  // Ignoring NM field as it's not being used.
+  size_t field_start{5};
+  for(size_t field_delim_pos{record.find(field_delim, field_start)};
+      field_delim_pos != std::string_view::npos;
+      field_delim_pos = record.find(field_delim, field_start)){
+
+    fields.push_back(record.substr(field_start, field_delim_pos - field_start));
+    field_start = field_delim_pos + 1;
+  }
+
+  return fields;
+}
+
+std::vector<SimpleAlignment> sa_value_to_alignments(std::string& qname, std::string_view sa_str){
+  // Each record should be semicolon terminated with comma delimited fields.
+	constexpr std::string_view record_delim{";"};
+	constexpr std::string_view field_delim{","};
+
+  size_t count = std::count_if(sa_str.begin(), sa_str.end(), [](char c){return c == ';';});
+  std::vector<SimpleAlignment> result{};
+
+  // Each record should have 6 fields: rname, pos, strand, CIGAR, mapQ, NM
+  std::vector<std::string_view> records{};
+  std::vector<std::string_view> fields;
+
+  result.reserve(count);
+  records.reserve(count);
+  fields.reserve(6);
+
+  size_t record_start{0};
+  size_t record_delim_pos{sa_str.find(record_delim, record_start)};
+  std::string_view rec{};
+
+  while( record_delim_pos != std::string_view::npos && record_delim_pos < sa_str.length() ){
+    rec = sa_str.substr(record_start, record_delim_pos - record_start);
+    //std::cerr<<"("<<record_start<<", "<<record_delim_pos<<", "<<rec.length()<<") "<<rec<<std::endl;
+
+    fields = parse_sa_record(rec);
+    result.push_back(make_simple_alignment(qname, fields));
+
+    record_start = record_delim_pos +1;
+    record_delim_pos = sa_str.find(record_delim, record_start);
+  }
+
+  return result;
+}
+
 void add_alignment(bj::object& container, SimpleAlignment& sa,  AlnType aln_type){
 
   // reference to top level all_splits or all_pairs
@@ -152,6 +237,7 @@ void print_counts(Accounting& counts, std::ostream& dest){
 bool run(const AppControlData& control){
   bj::object all_data = init_top_level_json();
   Accounting counts;
+  std::vector<SimpleAlignment> sa_alignments;
 
   try{
     AlignmentReader reader{control.input_path, control.ref_path};
@@ -182,14 +268,21 @@ bool run(const AppControlData& control){
         add_alignment(all_data, sa, AlnType::PAIRED);
       }
       if(reader.meets_split_criteria()){
-        counts.split++;
-        std::string sa_tag = reader.get_sa_tag();
-        counts.split_sa += reader.count_sa_tag();
-
+        // Add the primary alignment to the output data
         add_alignment(all_data, sa, AlnType::SPLIT);
+        counts.split++;
+
+        std::string query_name = reader.get_query_name();
+        std::string_view sa_tag = reader.get_sa_tag();
+
+        // Add the supplemental alignment to the output data
+        sa_alignments = sa_value_to_alignments(query_name, sa_tag);
+        for(auto& supplemental_alignment : sa_alignments){
+          add_alignment(all_data, supplemental_alignment, AlnType::SPLIT);
+        }
+
+        counts.split_sa += reader.count_sa_tag();
       }
-
-
 
       counts.total++;
     }

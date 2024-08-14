@@ -8,8 +8,9 @@ namespace bj = boost::json;
 
 class SimpleAlignment {
   public:
-    SimpleAlignment(const std::string& chr, const int start, const int end, const bool strand);
     SimpleAlignment(const std::string& qname, const std::string& chr, const int start, const int end, const bool strand);
+    SimpleAlignment(const std::string& chr, const int start, const int end, const bool strand);
+    SimpleAlignment();
     ~SimpleAlignment();
 
     // Query name

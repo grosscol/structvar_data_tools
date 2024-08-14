@@ -14,6 +14,7 @@
 #include "cram_reader.hpp"
 #include "simple_alignment.hpp"
 #include "boost/json.hpp"
+#include <string_view>
 #include <map>
 #include <iostream>
 #include <vector>
@@ -36,6 +37,7 @@ struct Accounting {
   int64_t split_sa{0};
 };
 
+// Type for holding "query name": [{alignment}, {alignment}, ...]
 typedef std::map<std::string, std::vector<SimpleAlignment>> aln_type_map;
 
 /**
@@ -46,7 +48,6 @@ typedef std::map<std::string, std::vector<SimpleAlignment>> aln_type_map;
  * -  Parse CLI arguments into application control data.
  */
 int app_main(const int argc, const char* argv[]);
-
 void emit_version_text();
 
 /**
@@ -54,17 +55,22 @@ void emit_version_text();
  * Behavior controlled by the configuration class passed to it.
  */
 bool run(const AppControlData&);
-
 bool parse_cli_args(const int argc, const char* argv[], AppControlData& controls);
 
-boost::json::object init_top_level_json();
+/**
+ * Supporting alignment operations
+ */
 SimpleAlignment make_simple_alignment(AlignmentReader& reader);
-void print_counts(Accounting& counts, std::ostream& dest);
+SimpleAlignment make_simple_alignment(const std::string& qname, const std::vector<std::string_view>& fields);
 
+std::vector<SimpleAlignment> sa_value_to_alignments(std::string_view sa_str);
+std::vector<std::string_view> parse_sa_record(std::string_view record);
+void print_counts(Accounting& counts, std::ostream& dest);
 
 /**
  * Add alignment under top level key for given aligntment type.
  */
 void add_alignment(bj::object& all_data, SimpleAlignment& sa,  AlnType aln_type);
+boost::json::object init_top_level_json();
 
 #endif

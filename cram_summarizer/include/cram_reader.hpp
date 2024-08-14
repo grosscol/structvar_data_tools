@@ -2,6 +2,7 @@
 #define CRAM_READER
 
 #include <string>
+#include <string_view>
 #include "htslib/hts.h"
 #include "htslib/sam.h"
 
@@ -36,23 +37,22 @@ class AlignmentReader {
     /* Field accessors */
     uint32_t get_n_cigar();
     std::string get_cigar_string();
-    std::string get_sa_tag();
     std::string get_query_name();
     std::string get_chrom();
+    std::string_view get_sa_tag();
     bool is_forward_strand();
     int64_t get_start();
-    int64_t get_end();
-
 
     /* Process data */
-
     // Calculate number of base pairs on reference that the aligment spans by
     //   sum of base pair counts of matches, insertions, mismatches and skips. (MDNX)
     static int reference_span(const std::string& cigar);
+    static int reference_span(const std::string_view& cigar);
+    static int reference_span_from_tokens(const std::vector<std::pair<int, char>>& tokens);
     static std::vector<std::pair<int, char>> tokenize_cigar(const std::string& cigar);
-    int get_alignment_end();
-    int parse_sa_value();
+    static std::vector<std::pair<int, char>> tokenize_cigar(const std::string_view cigar);
     int count_sa_tag();
+    int64_t get_end();
 
   private:
     bam1_t*     alignment{};

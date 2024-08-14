@@ -6,7 +6,7 @@ project(
   LANGUAGES CXX)
 set(PROGRAM_TITLE "Cram Summarizer")
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(EXECUTABLE_OUTPUT_PATH bin)
 
@@ -97,6 +97,7 @@ if(SAMTOOLS)
       cmake_path(GET SAM FILENAME SAMPLE_NAME)
       cmake_path(REMOVE_EXTENSION SAMPLE_NAME)
       set(CRAM_OUTFILE ${GENERATED_DATA_DIR}/${SAMPLE_NAME}.cram)
+      set(CRAM_INDEX ${GENERATED_DATA_DIR}/${SAMPLE_NAME}.cram.crai)
 
       if(NOT EXISTS ${CRAM_OUTFILE})
         message(STATUS "Generating CRAM for: " ${SAMPLE_NAME})
@@ -107,6 +108,14 @@ if(SAMTOOLS)
             ${SAM})
       else()
         message(STATUS "CRAM exists for: " ${SAMPLE_NAME})
+      endif()
+
+      if(NOT EXISTS ${CRAM_INDEX})
+        message(STATUS "Generating index for: " ${CRAM_OUTFILE})
+        execute_process(
+          COMMAND ${SAMTOOLS} index ${CRAM_OUTFILE})
+      else()
+        message(STATUS "index exists for: " ${CRAM_OUTFILE})
       endif()
 
     endforeach(SAM)

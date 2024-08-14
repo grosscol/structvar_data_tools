@@ -4,6 +4,9 @@ project(
   DESCRIPTION "Tooling for extracting data about structural variants."
   LANGUAGES CXX)
 
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 # Module for getting external content
 include(FetchContent)
 

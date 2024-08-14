@@ -8,6 +8,8 @@ SimpleAlignment::SimpleAlignment(
     const std::string& chr, const int start, const int end, const bool strand) :
     SimpleAlignment("*", chr, start, end, strand) {}
 
+SimpleAlignment::SimpleAlignment() : SimpleAlignment("*", "zzzz", 0, 1, true) {}
+
 SimpleAlignment::~SimpleAlignment(){}
 
 std::ostream& operator<<(std::ostream& os, const SimpleAlignment& sa){
@@ -21,7 +23,7 @@ boost::json::object SimpleAlignment::to_json(){
   obj["chr"] = chr;
   obj["start"] = start;
   obj["end"] = end;
-  obj["strand"] = strand;
+  obj["is_reverse"] = !strand;
 
   return obj;
 }

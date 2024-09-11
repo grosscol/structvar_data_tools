@@ -1,7 +1,8 @@
 #include "simple_alignment.hpp"
 
 SimpleAlignment::SimpleAlignment(
-    const std::string& qname, const std::string& chr, const int start, const int end, const bool strand) :
+    const std::string& qname, const std::string& chr, const int start, const int end, 
+    const bool strand) :
   qname(qname), chr(chr), start(start), end(end), strand(strand) {}
 
 SimpleAlignment::SimpleAlignment(
@@ -13,7 +14,7 @@ SimpleAlignment::SimpleAlignment() : SimpleAlignment("*", "zzzz", 0, 1, true) {}
 SimpleAlignment::~SimpleAlignment(){}
 
 std::ostream& operator<<(std::ostream& os, const SimpleAlignment& sa){
-  os << sa.chr << sa.start << sa.end << sa.strand;
+  os << sa.chr << "_" << sa.start << "_" << sa.end << "_" << sa.strand;
   return os;
 }
 

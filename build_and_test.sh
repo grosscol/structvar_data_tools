@@ -4,4 +4,4 @@
 set -e
 cmake --build ./build
 cd build
-ctest --output-on-failure
+ctest -V --output-on-failure

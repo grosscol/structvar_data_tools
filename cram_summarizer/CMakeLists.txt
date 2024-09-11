@@ -74,17 +74,20 @@ set(GENERATED_DATA_DIR ${CMAKE_BINARY_DIR}/Testing/data)
 file(MAKE_DIRECTORY ${GENERATED_DATA_DIR})
 
 # Enumerate fasta files
+# Fasta file basenames are proxies for the structural variant ids.
+# Test examples are keyed from the fasta file basenames e.g. dup_3
 file(GLOB FASTA_PATHS "test/data/*.fa")
 
 if(SAMTOOLS)
-
   foreach(FASTA IN LISTS FASTA_PATHS)
     cmake_path(GET FASTA FILENAME FA_FILENAME)
     cmake_path(REMOVE_EXTENSION FA_FILENAME OUTPUT_VARIABLE BASENAME)
 
+    set(FAIDX ${GENERATED_DATA_DIR}/${FA_FILENAME}.fai)
+
     # Copy Fasta into Generated Data & generate fasta index
     file(COPY ${FASTA} DESTINATION ${GENERATED_DATA_DIR})
-    if(NOT EXISTS ${GENERATED_DATA_DIR}/${FA_FILENAME}.fai)
+    if(NOT EXISTS ${FAIDX})
       message(STATUS "Generating fai for: " ${FA_FILENAME})
       execute_process(COMMAND ${SAMTOOLS} faidx ${GENERATED_DATA_DIR}/${FA_FILENAME})
     endif()
@@ -93,11 +96,14 @@ if(SAMTOOLS)
     file(GLOB SAM_PATHS "test/data/${BASENAME}*.sam")
 
     # Generate CRAMs using SAM and FASTA
+    # Copy corresponding FASTA to avoid parsing more than file extension in tests.
     foreach(SAM IN LISTS SAM_PATHS)
       cmake_path(GET SAM FILENAME SAMPLE_NAME)
       cmake_path(REMOVE_EXTENSION SAMPLE_NAME)
       set(CRAM_OUTFILE ${GENERATED_DATA_DIR}/${SAMPLE_NAME}.cram)
       set(CRAM_INDEX ${GENERATED_DATA_DIR}/${SAMPLE_NAME}.cram.crai)
+      set(CRAM_FASTA ${GENERATED_DATA_DIR}/${SAMPLE_NAME}.fa)
+      set(CRAM_FAIDX ${GENERATED_DATA_DIR}/${SAMPLE_NAME}.fa.fai)
 
       if(NOT EXISTS ${CRAM_OUTFILE})
         message(STATUS "Generating CRAM for: " ${SAMPLE_NAME})
@@ -125,5 +131,29 @@ else()
   message(STATUS "samtools NOT found. CRAM testing artifacts not built.")
 endif()
 
-# Make full path to test data directory available in testing header file
+# Make full path to source and built test data directory available in testing header file
 set(SRC_TEST_DATA_DIR ${CMAKE_CURRENT_SOURCE_DIR}/test/data)
+set(SRC_TEST_COUNTS_FILE ${SRC_TEST_DATA_DIR}/counts.txt)
+set(BLT_TEST_DATA_DIR ${CMAKE_CURRENT_BINARY_DIR}/Testing/data)
+
+configure_file(test/alignment_fixture.hpp.in ${CONFIGURED_INCLUDE_DIR}/alignment_fixture.hpp)
+
+add_executable(test_cram_summarizer
+  test/app_utils.cpp
+  test/simple_alignment.cpp
+  test/alignment_reader.cpp
+  test/summarizer.cpp)
+
+target_include_directories(test_cram_summarizer
+  PUBLIC
+    ${CONFIGURED_INCLUDE_DIR}
+    ${CMAKE_BINARY_DIR}
+    ${CMAKE_SOURCE_DIR}/include)
+
+target_link_libraries(test_cram_summarizer
+  GTest::gtest_main
+  GTest::gmock_main
+  ${CLI_NAME}_lib)
+
+enable_testing()
+gtest_discover_tests(test_cram_summarizer)

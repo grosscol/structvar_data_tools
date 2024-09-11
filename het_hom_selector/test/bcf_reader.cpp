@@ -33,6 +33,7 @@ TEST_P(FilePathFixture, HeaderVersion){
 
   EXPECT_EQ(version, "VCFv4.1") << "Version:" << version;
 }
+
 INSTANTIATE_TEST_SUITE_P( HeaderVersion, FilePathFixture,
     testing::ValuesIn(input_path_strings()));
 

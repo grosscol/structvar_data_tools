@@ -46,7 +46,8 @@ target_link_libraries(${CLI_NAME}_lib
     BZip2::BZip2
     LibLZMA::LibLZMA
     CURL::libcurl
-    OpenSSL::Crypto)
+    OpenSSL::Crypto
+    Threads::Threads)
 
 # Build executable wrapper around application lib
 add_executable(${CLI_NAME}

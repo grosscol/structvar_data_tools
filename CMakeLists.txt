@@ -7,6 +7,7 @@ project(
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+
 # Module for getting external content
 include(FetchContent)
 
@@ -69,11 +70,23 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(boost googletest)
 
+###############################
+# Ensure PTHREAD is available #
+###############################
+
+# Find Threads for binaries to link against
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+
 ##############
 # Get HTSlib #
 ##############
 set(htslib_PREFIX ${CMAKE_BINARY_DIR}/contrib/htslib-prefix)
 set(htslib_INSTALL ${CMAKE_BINARY_DIR}/contrib/htslib-install)
+
+# Use absolute path and BUILD_BYPRODUCTS to accomodate ninja-build backend
+get_filename_component(htslib_LIB ${htslib_INSTALL}/lib/libhts.a REALPATH)
+
 if (CMAKE_GENERATOR STREQUAL "Unix Makefiles")
     # When using the makefile generator, use the special variable $(MAKE) to invoke make
     #   This handles recursive invokation of make within a makefile
@@ -89,6 +102,7 @@ ExternalProject_Add(
   URL https://github.com/samtools/htslib/releases/download/1.19.1/htslib-1.19.1.tar.bz2
   UPDATE_COMMAND ""
   BUILD_IN_SOURCE 1
+  BUILD_BYPRODUCTS ${htslib_LIB}
   CONFIGURE_COMMAND autoreconf -i && ./configure --without-libdeflate --prefix=${htslib_PREFIX}
   BUILD_COMMAND ${MAKE_COMMAND} lib-static
   INSTALL_COMMAND ${MAKE_COMMAND} install prefix=${htslib_INSTALL}
@@ -96,7 +110,6 @@ ExternalProject_Add(
   LOG_BUILD 0
 )
 
-set(htslib_LIB ${htslib_INSTALL}/lib/libhts.a)
 
 ################################
 # BRAVO Data Tools Subprojects #

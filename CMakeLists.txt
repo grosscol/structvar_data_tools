@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.25)
+cmake_minimum_required(VERSION 4.0)
 project(
   StructVarTooling
   DESCRIPTION "Tooling for extracting data about structural variants."
@@ -60,7 +60,7 @@ FetchContent_Declare(
   GIT_REPOSITORY https://github.com/boostorg/boost.git
   GIT_SHALLOW TRUE
   GIT_PROGRESS TRUE
-  GIT_TAG boost-1.80.0
+  GIT_TAG boost-1.85.0
 )
 
 FetchContent_Declare(
@@ -126,7 +126,7 @@ add_subdirectory(cram_summarizer)
 ###########
 
 add_executable(demo
-  scratch/demo.cpp)
+  smoke_test/demo.cpp)
 
 target_include_directories(demo
   PRIVATE

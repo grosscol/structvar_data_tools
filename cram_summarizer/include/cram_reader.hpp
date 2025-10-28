@@ -49,7 +49,7 @@ class AlignmentReader {
     static int reference_span(const std::string& cigar);
     static int reference_span(const std::string_view& cigar);
     static int reference_span_from_tokens(const std::vector<std::pair<int, char>>& tokens);
-    static std::vector<std::pair<int, char>> tokenize_cigar(const std::string& cigar);
+    //static std::vector<std::pair<int, char>> tokenize_cigar(const std::string& cigar);
     static std::vector<std::pair<int, char>> tokenize_cigar(const std::string_view cigar);
     int count_sa_tag();
     int64_t get_end();

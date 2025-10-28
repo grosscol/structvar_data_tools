@@ -102,6 +102,7 @@ int AlignmentReader::count_sa_tag(){
   return std::count_if(sa_str.begin(), sa_str.end(), [](char c){return c == ';';});
 }
 
+/*
 std::vector<std::pair<int, char>> AlignmentReader::tokenize_cigar(const std::string& cigar){
   std::vector<std::pair<int, char>> tokens{};
   int position{0};
@@ -121,6 +122,7 @@ std::vector<std::pair<int, char>> AlignmentReader::tokenize_cigar(const std::str
 
   return tokens;
 }
+*/
 
 std::vector<std::pair<int, char>> AlignmentReader::tokenize_cigar(const std::string_view cigar){
   std::string_view digits{"0123456789"};

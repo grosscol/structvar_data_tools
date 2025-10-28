@@ -148,13 +148,18 @@ std::vector<std::string_view> parse_sa_record(std::string_view record){
 
   // Must be five delimiters and the tag identifier must be present.
   size_t count = std::count_if(record.begin(), record.end(), [](char c){return c == ',';});
-  if(count != 5 || record.substr(0,5) != "SA:Z:"){
+  if(count != 5){
+    std::cerr<<"Unexpected number of fields in SA tag"<<std::endl;
     return fields;
   }
 
-  // First five characters are tag identifier. Field data begins at 6th character.
-  // Ignoring NM field as it's not being used.
+  // For the first SA record, first five characters are tag identifier. Field data begins at 6th.
   size_t field_start{5};
+  if(record.substr(0,5) != "SA:Z:"){
+    field_start = 0;
+  }
+
+  // Ignoring NM field as it's not being used.
   for(size_t field_delim_pos{record.find(field_delim, field_start)};
       field_delim_pos != std::string_view::npos;
       field_delim_pos = record.find(field_delim, field_start)){
@@ -188,7 +193,6 @@ std::vector<SimpleAlignment> sa_value_to_alignments(std::string& qname, std::str
 
   while( record_delim_pos != std::string_view::npos && record_delim_pos < sa_str.length() ){
     rec = sa_str.substr(record_start, record_delim_pos - record_start);
-    //std::cerr<<"("<<record_start<<", "<<record_delim_pos<<", "<<rec.length()<<") "<<rec<<std::endl;
 
     fields = parse_sa_record(rec);
     result.push_back(make_simple_alignment(qname, fields));
@@ -290,9 +294,6 @@ bool run(const AppControlData& control){
     std::cerr<<"Error creating CRAM reader: "<<ex.what()<<"\n";
     return false;
   }
-
-  //debugging
-  print_counts(counts, std::cerr);
 
   std::cout<<all_data<<std::endl;
   return true;

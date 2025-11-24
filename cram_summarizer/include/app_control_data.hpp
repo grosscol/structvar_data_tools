@@ -22,6 +22,11 @@ struct AppControlData {
   std::string ref_path{};
 
   /**
+   * Consequent of sample ratio (1:X). Output 1 sample per X samples. Default 1 outputs all alignments.
+   */
+  uint16_t sample_per{1};
+
+  /**
    * Should version string be printed to stdout.
    * Should program exit without reading or processing data.
    */

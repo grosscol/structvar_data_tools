@@ -62,6 +62,7 @@ bool parse_cli_args(const int argc, const char* argv[], AppControlData& controls
       ("help,h", "Print usage and exit.")
       ("version,v", "Print version and exit.")
       ("ref,r", po::value(&controls.ref_path),"Path to reference fasta for crams.")
+      ("sampled, s", po::value(&controls.sample_per), "output 1 sample per S samples. 1-65536")
   ;
 
   hidden.add_options()
@@ -239,7 +240,7 @@ void print_counts(Accounting& counts, std::ostream& dest){
 }
 
 bool run(const AppControlData& control){
-  bj::object all_data = init_top_level_json();
+  bj::object out_data = init_top_level_json();
   Accounting counts;
   std::vector<SimpleAlignment> sa_alignments;
 
@@ -263,38 +264,39 @@ bool run(const AppControlData& control){
         counts.bad_mapq++;
         continue;
       }
-      // Process alignment into output category.
-
+      // Process alignment into output data.
       SimpleAlignment sa = make_simple_alignment(reader);
+      counts.total++;
 
       if(reader.meets_pair_criteria()){
         counts.paired++;
-        add_alignment(all_data, sa, AlnType::PAIRED);
+        if(counts.total % control.sample_per == 0){
+          add_alignment(out_data, sa, AlnType::PAIRED);
+        }
       }
       if(reader.meets_split_criteria()){
-        // Add the primary alignment to the output data
-        add_alignment(all_data, sa, AlnType::SPLIT);
         counts.split++;
 
+        // Parse supplemental alignments
         std::string query_name = reader.get_query_name();
         std::string_view sa_tag = reader.get_sa_tag();
-
-        // Add the supplemental alignment to the output data
-        sa_alignments = sa_value_to_alignments(query_name, sa_tag);
-        for(auto& supplemental_alignment : sa_alignments){
-          add_alignment(all_data, supplemental_alignment, AlnType::SPLIT);
-        }
-
         counts.split_sa += reader.count_sa_tag();
-      }
 
-      counts.total++;
+        // Add primary and supplemental alignments to output data according to sampling rule.
+        if(counts.total % control.sample_per == 0){
+          add_alignment(out_data, sa, AlnType::SPLIT);
+          sa_alignments = sa_value_to_alignments(query_name, sa_tag);
+          for(auto& supplemental_alignment : sa_alignments){
+            add_alignment(out_data, supplemental_alignment, AlnType::SPLIT);
+          }
+        }
+      }
     }
   } catch(std::runtime_error& ex){
     std::cerr<<"Error creating CRAM reader: "<<ex.what()<<"\n";
     return false;
   }
 
-  std::cout<<all_data<<std::endl;
+  std::cout<<out_data<<std::endl;
   return true;
 }

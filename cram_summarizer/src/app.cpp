@@ -30,7 +30,6 @@ int app_main(const int argc, const char* argv[]) {
     return EXIT_SUCCESS;
   }
 
-
   has_run_succeeded = run(app_ctl);
 
   if(has_run_succeeded){
@@ -62,7 +61,7 @@ bool parse_cli_args(const int argc, const char* argv[], AppControlData& controls
       ("help,h", "Print usage and exit.")
       ("version,v", "Print version and exit.")
       ("ref,r", po::value(&controls.ref_path),"Path to reference fasta for crams.")
-      ("sampled, s", po::value(&controls.sample_per), "output 1 sample per S samples. 1-65536")
+      ("sampled,s", po::value(&controls.sample_per), "Reduce output by factor of S. Output 1 sample per S samples. 1-65536")
   ;
 
   hidden.add_options()
@@ -270,6 +269,7 @@ bool run(const AppControlData& control){
 
       if(reader.meets_pair_criteria()){
         counts.paired++;
+
         if(counts.total % control.sample_per == 0){
           add_alignment(out_data, sa, AlnType::PAIRED);
         }

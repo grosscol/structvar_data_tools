@@ -13,6 +13,9 @@ set(EXECUTABLE_OUTPUT_PATH bin)
 set(CONFIGURED_INCLUDE_DIR ${CMAKE_CURRENT_BINARY_DIR}/configured_include)
 set(CLI_NAME cram_summ)
 
+# DEBUG
+message(STATUS "Default install dir ${CMAKE_INSTALL_PREFIX}")
+
 # Directory for the cmake configured header files
 file(MAKE_DIRECTORY ${CONFIGURED_INCLUDE_DIR})
 
@@ -113,16 +116,12 @@ if(SAMTOOLS)
             --reference ${GENERATED_DATA_DIR}/${FA_FILENAME}
             --output ${GENERATED_DATA_DIR}/${SAMPLE_NAME}.cram
             ${SAM})
-      else()
-        message(STATUS "CRAM exists for: " ${SAMPLE_NAME})
       endif()
 
       if(NOT EXISTS ${CRAM_INDEX})
         message(STATUS "Generating index for: " ${CRAM_OUTFILE})
         execute_process(
           COMMAND ${SAMTOOLS} index ${CRAM_OUTFILE})
-      else()
-        message(STATUS "index exists for: " ${CRAM_OUTFILE})
       endif()
 
     endforeach(SAM)

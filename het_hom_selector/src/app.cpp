@@ -148,7 +148,7 @@ std::vector<std::string> random_homs(const BcfReader& bcf, std::mt19937& gen, co
 
 void emit_header(const int seed, const int n_sample, const bool emit_id){
   std::cout<<"#RANDOM_SEED="<<std::to_string(seed)<<"\n"
-    <<"#MAX_RANDOM_HOM_HETS=<<"<<std::to_string(n_sample)<<"\n"
+    <<"#MAX_RANDOM_HOM_HETS="<<std::to_string(n_sample)<<"\n"
     <<"#SAMPLES_USED=NA"<<"\n"
     <<"#CHROM\tPOS\t";
   if(emit_id){
